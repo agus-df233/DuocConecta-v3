@@ -9,6 +9,7 @@ import {
 import Aviso, { useAviso } from './Aviso'
 import { duracion, fechaLarga, TIPOS_ACTIVIDAD } from './catalogo'
 import { Barras, Cifra } from './Cifras'
+import { EsqueletoLista } from './Esqueleto'
 
 const ALERTAS_CADA = 20_000
 const STREAMING_CADA = 5_000
@@ -58,7 +59,7 @@ export function Alertas() {
       </div>
 
       {error && <div className="error" role="alert">{error}</div>}
-      {!alertas && !error && <div className="cargando">Buscando alertas…</div>}
+      {!alertas && !error && <EsqueletoLista texto="Buscando alertas" />}
       {alertas?.length === 0 && (
         <div className="vacio">
           <h3>{soloPendientes ? 'No hay alertas pendientes' : 'Todavía no hay alertas'}</h3>
@@ -111,7 +112,7 @@ export function Actividad() {
   useRefresco(cargar, ALERTAS_CADA)
 
   if (error) return <div className="error">{error}</div>
-  if (!metricas) return <div className="cargando">Contando los registros…</div>
+  if (!metricas) return <EsqueletoLista filas={8} texto="Contando los registros" />
 
   const sumar = (filas, clave) => Object.entries(filas.reduce((acc, f) => {
     acc[clave(f)] = (acc[clave(f)] ?? 0) + f.cantidad
@@ -179,7 +180,7 @@ export function Streaming() {
   }
 
   if (error && !estado) return <div className="error">{error}</div>
-  if (!estado) return <div className="cargando">Preguntándole a Kafka…</div>
+  if (!estado) return <EsqueletoLista filas={8} texto="Preguntándole a Kafka" />
 
   const { cluster, topicos, grupos } = estado
   return (

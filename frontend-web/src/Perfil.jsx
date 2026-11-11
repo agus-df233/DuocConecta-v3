@@ -6,6 +6,7 @@ import {
   listarProyectos, editarProyecto, retirarColaboracion,
 } from './api'
 import { claimsDelToken } from './auth'
+import { enCache } from './cache'
 import { misPrompts } from './api'
 import Aviso, { useAviso } from './Aviso'
 import Confirmar from './Confirmar'
@@ -15,6 +16,7 @@ import AceptarSolicitud from './AceptarSolicitud'
 import Interruptor from './Interruptor'
 import { MisColaboraciones, MisSolicitudes, responder, useColaboraciones } from './Solicitudes'
 import { CATEGORIAS_PROMPT, ESCUELAS, ESTADOS, SEDES, SIN_CARRERA, iniciales } from './catalogo'
+import { EsqueletoLista } from './Esqueleto'
 
 // Qué sección del perfil corresponde a cada destino de un aviso.
 const SECCIONES = {
@@ -26,7 +28,8 @@ const SECCIONES = {
 }
 
 export default function Perfil({ foco, alUsarFoco, preferencias, cambiarPreferencias, alAbrirPrompt }) {
-  const [datos, setDatos] = useState(null)
+  // El perfil ya se pidió al entrar (para los roles): se muestra al tiro y se refresca.
+  const [datos, setDatos] = useState(() => enCache('mi-perfil') ?? null)
   const [error, setError] = useState(null)
   const { texto: aviso, avisar } = useAviso()
   const [pestana, setPestana] = useState('recibidas')
@@ -80,7 +83,7 @@ export default function Perfil({ foco, alUsarFoco, preferencias, cambiarPreferen
   }
 
   if (error && !datos) return <div className="error" role="alert">{error}</div>
-  if (!datos) return <div className="cargando" aria-busy="true">Cargando tu perfil…</div>
+  if (!datos) return <EsqueletoLista filas={9} texto="Cargando tu perfil" />
 
   const { perfil } = datos
 
@@ -319,7 +322,8 @@ function PreferenciasDeAviso({ preferencias, alCambiar }) {
  * proyecto oculto por moderación solo lo ve su dueña, con el motivo, y ella no puede revertirlo.
  */
 function MisProyectos({ alAvisar, alFallar }) {
-  const [todos, setTodos] = useState(null)
+  // Sale de la vitrina, que casi siempre ya se cargó: se reutiliza y se refresca por detrás.
+  const [todos, setTodos] = useState(() => enCache('vitrina') ?? null)
   const [miOid, setMiOid] = useState(null)
   const [editando, setEditando] = useState(null)
 
@@ -417,7 +421,7 @@ function MisProyectos({ alAvisar, alFallar }) {
 
 /** Los prompts propios, con su estado. Se editan desde la biblioteca, donde está el formulario. */
 function MisPrompts({ alAbrir }) {
-  const [prompts, setPrompts] = useState(null)
+  const [prompts, setPrompts] = useState(() => enCache('mis-prompts') ?? null)
 
   useEffect(() => {
     misPrompts().then(setPrompts).catch(() => setPrompts([]))

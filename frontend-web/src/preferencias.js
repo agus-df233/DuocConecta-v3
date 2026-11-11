@@ -15,11 +15,17 @@ export const PREFERENCIAS_INICIALES = {
   duracionAvisos: 0,   // 0 = 6 s · 1 = 12 s · 2 = hasta cerrarlos
 }
 
+/** Si el sistema pide menos movimiento, la aplicación parte así hasta que la persona elija otra cosa. */
+function iniciales() {
+  const sistema = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  return { ...PREFERENCIAS_INICIALES, movimiento: sistema }
+}
+
 function leer() {
   try {
-    return { ...PREFERENCIAS_INICIALES, ...JSON.parse(window.localStorage.getItem(CLAVE) ?? '{}') }
+    return { ...iniciales(), ...JSON.parse(window.localStorage.getItem(CLAVE) ?? '{}') }
   } catch {
-    return PREFERENCIAS_INICIALES
+    return iniciales()
   }
 }
 

@@ -56,7 +56,9 @@ html[data-texto="2"] body { zoom: 1.25; }
 html[data-movimiento="reducido"] *, html[data-movimiento="reducido"] *::before, html[data-movimiento="reducido"] *::after {
   animation: none !important; transition: none !important; scroll-behavior: auto !important;
 }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
 
 * { box-sizing: border-box; }
 
@@ -110,6 +112,10 @@ button:disabled { cursor: not-allowed; }
 @keyframes late    { 0%, 100% { box-shadow: 0 0 0 0 rgba(27,77,177,.35); } 50% { box-shadow: 0 0 0 5px rgba(27,77,177,0); } }
 @keyframes brillo  { from { background-position: -320px 0; } to { background-position: 320px 0; } }
 @keyframes crece   { from { width: 0; } }
+@keyframes baja    { to { opacity: 0; transform: translateY(14px); } }
+@keyframes sale    { to { opacity: 0; transform: translateX(28px); } }
+@keyframes desvanece { to { opacity: 0; } }
+@keyframes entraVista { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* Enlace para saltar la navegación con el teclado: invisible hasta que recibe el foco. */
 .saltar {
@@ -1003,3 +1009,12 @@ textarea.prompt-texto { width: 100%; max-height: none; }
 .estrellas input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .estrellas input:focus-visible + span { outline: 2px solid var(--azul-claro); outline-offset: 2px; border-radius: 4px; }
 .estrellas:disabled label { cursor: progress; opacity: .6; }
+
+/* --- Navegación fluida (v3) --- */
+/* Cada vista entra con un fundido corto; la clave de React cambia con la vista. */
+.vista { animation: entraVista .22s ease-out; }
+/* Salida de ventanas y paneles: dura lo mismo que SALIDA_MS en Ventana.jsx. */
+.modal.cerrando { animation: baja .18s ease-in forwards; }
+.drawer.cerrando { animation: sale .18s ease-in forwards; }
+.modal-fondo.cerrando, .telon.cerrando { animation: desvanece .18s ease-in forwards; }
+.lista-esqueleto { margin-top: 6px; }

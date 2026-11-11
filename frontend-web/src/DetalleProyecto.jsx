@@ -5,7 +5,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { listarComentarios, comentarProyecto, registrarVistaProyecto, interaccionesDe } from './api'
 import { ESTADOS, fechaCorta, fechaRelativa, TEXTO_SOLICITUD } from './catalogo'
-import { useAtraparFoco } from './Ventana'
+import { useAtraparFoco, useCierreAnimado } from './Ventana'
 
 /** Tamaño legible: 1.4 MB dice más que 1468006. */
 function pesoLegible(bytes) {
@@ -22,7 +22,8 @@ export default function DetalleProyecto({
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState(null)
-  const caja = useAtraparFoco(alCerrar)
+  const [cerrando, cerrar] = useCierreAnimado(alCerrar)
+  const caja = useAtraparFoco(cerrar)
   const campo = useRef(null)
   const titulo = useId()
 
@@ -76,8 +77,8 @@ export default function DetalleProyecto({
 
   return (
     <>
-      <div className="telon" onClick={alCerrar} />
-      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby={titulo} ref={caja} tabIndex={-1}>
+      <div className={cerrando ? 'telon cerrando' : 'telon'} onClick={cerrar} />
+      <aside className={cerrando ? 'drawer cerrando' : 'drawer'} role="dialog" aria-modal="true" aria-labelledby={titulo} ref={caja} tabIndex={-1}>
         <div className="drawer-cabecera">
           <div className="crece">
             <span className={`insignia ${proyecto.estado}`}>{ESTADOS[proyecto.estado] ?? proyecto.estado}</span>
@@ -93,7 +94,7 @@ export default function DetalleProyecto({
               </p>
             )}
           </div>
-          <button type="button" className="cerrar" onClick={alCerrar} aria-label="Cerrar">×</button>
+          <button type="button" className="cerrar" onClick={cerrar} aria-label="Cerrar">×</button>
         </div>
 
         <div className="drawer-cuerpo">

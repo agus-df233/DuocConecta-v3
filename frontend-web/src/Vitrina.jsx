@@ -6,6 +6,7 @@ import {
   solicitarColaboracion, colaboracionesEnviadas, tendencias,
 } from './api'
 import { claimsDelToken } from './auth'
+import { enCache } from './cache'
 import Aviso, { useAviso } from './Aviso'
 import CompartirProyecto from './CompartirProyecto'
 import Confirmar from './Confirmar'
@@ -25,7 +26,8 @@ const CADA = 20_000
 const EN_TENDENCIA = 3
 
 export default function Vitrina({ foco, alUsarFoco, escondidos, alEsconder }) {
-  const [proyectos, setProyectos] = useState(null)
+  // Lo que se vio la última vez aparece al tiro; la carga de abajo lo pone al día.
+  const [proyectos, setProyectos] = useState(() => enCache('vitrina') ?? null)
   const [miOid, setMiOid] = useState(null)
   const [error, setError] = useState(null)
   const { texto: aviso, accion: accionAviso, avisar, cerrar: cerrarAviso } = useAviso()

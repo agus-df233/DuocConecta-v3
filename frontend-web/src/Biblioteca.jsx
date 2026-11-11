@@ -5,19 +5,22 @@ import {
   bifurcarPrompt, editarPrompt, eliminarPrompt, listarPrompts, publicarPrompt, registrarCopiaPrompt, tendencias,
 } from './api'
 import { claimsDelToken } from './auth'
+import { enCache } from './cache'
 import Aviso, { useAviso } from './Aviso'
 import { CATEGORIAS_PROMPT, ESCUELAS, HERRAMIENTAS_IA, ORDENES_PROMPT } from './catalogo'
 import Confirmar from './Confirmar'
 import DetallePrompt from './DetallePrompt'
 import FormularioPrompt from './FormularioPrompt'
 import TarjetaPrompt from './TarjetaPrompt'
+import { EsqueletoTarjetas } from './Esqueleto'
 
 const CADA = 20_000
 const EN_TENDENCIA = 3
 const SIN_FILTROS = { texto: '', categoria: '', carrera: '', herramienta: '', orden: 'RECIENTES' }
 
 export default function Biblioteca({ foco, alUsarFoco }) {
-  const [prompts, setPrompts] = useState(null)
+  // La biblioteca sin filtros que se vio la última vez aparece al tiro, mientras se pide lo nuevo.
+  const [prompts, setPrompts] = useState(() => enCache('biblioteca:orden=RECIENTES') ?? null)
   const [puntajes, setPuntajes] = useState(new Map())
   const [miOid, setMiOid] = useState(null)
   const [filtros, setFiltros] = useState(SIN_FILTROS)
@@ -184,7 +187,7 @@ export default function Biblioteca({ foco, alUsarFoco }) {
       </section>
 
       {prompts === null ? (
-        <div className="cargando">Abriendo la biblioteca…</div>
+        <EsqueletoTarjetas texto="Abriendo la biblioteca" />
       ) : visibles.length === 0 ? (
         <div className="vacio">
           <div className="logo" aria-hidden="true" />

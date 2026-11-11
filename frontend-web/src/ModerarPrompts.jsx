@@ -9,6 +9,7 @@ import { CATEGORIAS_PROMPT, fechaCorta } from './catalogo'
 import { Barras, Cifra } from './Cifras'
 import Confirmar from './Confirmar'
 import Ventana from './Ventana'
+import { EsqueletoLista } from './Esqueleto'
 
 export default function ModerarPrompts() {
   const [filtro, setFiltro] = useState('')
@@ -61,7 +62,7 @@ export default function ModerarPrompts() {
       </div>
 
       {error && <div className="error" role="alert">{error}</div>}
-      {!prompts ? <div className="cargando">Cargando prompts…</div> : prompts.length === 0 ? (
+      {!prompts ? <EsqueletoLista texto="Cargando prompts" /> : prompts.length === 0 ? (
         <div className="vacio">No hay prompts con ese filtro.</div>
       ) : (
         <div className="tabla-scroll">

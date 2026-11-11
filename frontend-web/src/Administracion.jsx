@@ -22,6 +22,7 @@ import { ESTADOS, fechaCorta, fechaLarga } from './catalogo'
 import Confirmar from './Confirmar'
 import FormularioProyecto from './FormularioProyecto'
 import Ventana from './Ventana'
+import { EsqueletoLista } from './Esqueleto'
 
 const PESTANAS = [
   { id: 'resumen', texto: 'Resumen' },
@@ -35,8 +36,13 @@ const PESTANAS = [
 
 const VISIBILIDADES = { PUBLICO: 'Público', COMPARTIDO: 'Compartido', PRIVADO: 'Privado' }
 
-export default function Administracion() {
-  const [pestana, setPestana] = useState('resumen')
+/**
+ * La sección viene de la dirección (#/admin/kafka), así "Atrás" vuelve a la pestaña anterior y un
+ * enlace lleva directo a una sección.
+ */
+export default function Administracion({ seccion, alCambiarSeccion }) {
+  const pestana = PESTANAS.some((p) => p.id === seccion) ? seccion : 'resumen'
+  const setPestana = alCambiarSeccion
 
   return (
     <section>
@@ -77,7 +83,7 @@ function Resumen() {
   }, [])
 
   if (error) return <div className="error">{error}</div>
-  if (!datos) return <div className="cargando">Calculando las cifras…</div>
+  if (!datos) return <EsqueletoLista filas={8} texto="Calculando las cifras" />
 
   const { comunidad, vitrina } = datos
   return (
@@ -175,7 +181,7 @@ function ModerarProyectos() {
       </div>
 
       {error && <div className="error" role="alert">{error}</div>}
-      {!proyectos && !error && <div className="cargando" aria-busy="true">Cargando proyectos…</div>}
+      {!proyectos && !error && <EsqueletoLista texto="Cargando proyectos" />}
 
       {proyectos && (
         <div className="tarjeta tabla-scroll">
@@ -294,7 +300,7 @@ function ModerarComentarios() {
   }
 
   if (error && !comentarios) return <div className="error" role="alert">{error}</div>
-  if (!comentarios) return <div className="cargando" aria-busy="true">Cargando comentarios…</div>
+  if (!comentarios) return <EsqueletoLista texto="Cargando comentarios" />
 
   return (
     <>

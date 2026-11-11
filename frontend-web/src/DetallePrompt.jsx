@@ -4,14 +4,15 @@ import { useEffect, useId, useState } from 'react'
 import { interaccionesDe, obtenerPrompt, registrarVistaPrompt, valorarPrompt } from './api'
 import { CATEGORIAS_PROMPT, fechaCorta } from './catalogo'
 import { ElegirEstrellas, PromedioEstrellas } from './Estrellas'
-import { useAtraparFoco } from './Ventana'
+import { useAtraparFoco, useCierreAnimado } from './Ventana'
 
 export default function DetallePrompt({ id, miOid, alCopiar, alBifurcar, alEditar, alBorrar, alAbrirOtro, alCerrar }) {
   const [prompt, setPrompt] = useState(null)
   const [interes, setInteres] = useState(null)
   const [error, setError] = useState(null)
   const [valorando, setValorando] = useState(false)
-  const caja = useAtraparFoco(alCerrar)
+  const [cerrando, cerrar] = useCierreAnimado(alCerrar)
+  const caja = useAtraparFoco(cerrar)
   const titulo = useId()
 
   useEffect(() => {
@@ -45,8 +46,8 @@ export default function DetallePrompt({ id, miOid, alCopiar, alBifurcar, alEdita
 
   return (
     <>
-      <div className="telon" onClick={alCerrar} />
-      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby={titulo} ref={caja} tabIndex={-1}>
+      <div className={cerrando ? 'telon cerrando' : 'telon'} onClick={cerrar} />
+      <aside className={cerrando ? 'drawer cerrando' : 'drawer'} role="dialog" aria-modal="true" aria-labelledby={titulo} ref={caja} tabIndex={-1}>
         <div className="drawer-cabecera">
           <div className="crece">
             {prompt && <span className="insignia categoria">{CATEGORIAS_PROMPT[prompt.categoria] ?? prompt.categoria}</span>}
@@ -63,7 +64,7 @@ export default function DetallePrompt({ id, miOid, alCopiar, alBifurcar, alEdita
               </p>
             )}
           </div>
-          <button type="button" className="cerrar" onClick={alCerrar} aria-label="Cerrar">×</button>
+          <button type="button" className="cerrar" onClick={cerrar} aria-label="Cerrar">×</button>
         </div>
 
         <div className="drawer-cuerpo">

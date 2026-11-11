@@ -1,6 +1,7 @@
 // Cliente de la API. Cada petición lleva el token del proveedor con que se entró (Microsoft o Google).
 
 import { obtenerToken } from './auth'
+import { conCache } from './cache'
 
 // Vacío = mismo origen, que es como queda detrás del API Gateway: llamadas relativas y sin CORS.
 // En local lleva la URL completa, porque el front está en el 5173 y el BFF en el 8080.
@@ -41,7 +42,7 @@ async function pedir(ruta, opciones = {}) {
 // --- Perfil (ms-usuarios, vía BFF) --------------------------------------------
 
 /** Perfil y redes del usuario autenticado, en una sola llamada agregada por el BFF. */
-export const obtenerMiPerfil = () => pedir('/api/v1/bff/mi-perfil')
+export const obtenerMiPerfil = () => conCache('mi-perfil', () => pedir('/api/v1/bff/mi-perfil'))
 
 /** Guarda los cambios del perfil propio. */
 export const guardarMiPerfil = (perfil) =>
@@ -57,7 +58,7 @@ export const alternarVisibilidad = () =>
 // borrar van directo a ms-proyectos: ahí no hay nada que componer.
 
 /** Proyectos que la persona puede ver, con los datos de quien publicó cada uno. */
-export const listarProyectos = () => pedir('/api/v1/bff/vitrina')
+export const listarProyectos = () => conCache('vitrina', () => pedir('/api/v1/bff/vitrina'))
 
 /** Publica un proyecto nuevo. */
 export const publicarProyecto = (proyecto) =>
@@ -269,14 +270,15 @@ export const grupoKafka = (id) => pedir(`/api/v1/mensajeria/kafka/grupos/${encod
 /** Busca en la biblioteca. Los filtros vacíos no se envían. */
 export const listarPrompts = (filtros = {}) => {
   const parametros = new URLSearchParams(Object.entries(filtros).filter(([, v]) => v))
-  return pedir(`/api/v1/bff/biblioteca${parametros.size ? `?${parametros}` : ''}`)
+  const ruta = `/api/v1/bff/biblioteca${parametros.size ? `?${parametros}` : ''}`
+  return conCache(`biblioteca:${parametros}`, () => pedir(ruta))
 }
 
 /** El detalle de un prompt, con su autor y, si es una copia, el del original. */
 export const obtenerPrompt = (id) => pedir(`/api/v1/bff/biblioteca/${id}`)
 
 /** Los prompts propios, también los privados. */
-export const misPrompts = () => pedir('/api/v1/prompts/mios')
+export const misPrompts = () => conCache('mis-prompts', () => pedir('/api/v1/prompts/mios'))
 
 /** Publica un prompt. */
 export const publicarPrompt = (prompt) =>

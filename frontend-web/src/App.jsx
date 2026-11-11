@@ -12,25 +12,27 @@ import { obtenerMiPerfil, responderColaboracion } from './api'
 import { avisarCambio } from './eventos'
 import insigniaDuoc from './assets/duoc-uc.jpg'
 import { iniciales, tipoDeAviso } from './catalogo'
+import { olvidar } from './cache'
 import { CLAVE_DESTINO, PREFIJO_ENLACE, PREFIJO_PROMPT } from './enlaces'
+import { escribirRuta, leerRuta } from './navegacion'
 import Perfil from './Perfil'
 import { usePreferencias } from './preferencias'
 import Vitrina from './Vitrina'
 
 /**
- * Un enlace compartido abre un proyecto: https://…/#proyecto-<id>. Si la persona todavía no
- * había entrado, el destino quedó guardado antes del login, porque el proveedor no conserva el #.
+ * Dónde empieza la persona. Un enlace compartido (#proyecto-<id>, #prompt-<id>) manda; si la persona
+ * todavía no había entrado, quedó guardado antes del login, porque el proveedor no conserva el #.
+ * Si no, la vista de la dirección (#/perfil…) o la vitrina.
  */
-function destinoInicial() {
+function rutaInicial() {
   let guardado = null
   try {
     guardado = window.sessionStorage.getItem(CLAVE_DESTINO)
     window.sessionStorage.removeItem(CLAVE_DESTINO)
   } catch { /* sin almacenamiento no hay destino guardado */ }
-  const hash = window.location.hash
-  const enlace = hash.startsWith(PREFIJO_ENLACE) || hash.startsWith(PREFIJO_PROMPT) ? hash : guardado
-  if (enlace?.startsWith(PREFIJO_PROMPT)) return { promptId: enlace.slice(PREFIJO_PROMPT.length) }
-  return enlace?.startsWith(PREFIJO_ENLACE) ? { proyectoId: enlace.slice(PREFIJO_ENLACE.length) } : null
+  const actual = leerRuta()
+  const deEnlace = actual?.foco ? actual : (guardado ? leerRuta(guardado) : null)
+  return deEnlace ?? actual ?? { vista: 'vitrina', seccion: null, foco: null }
 }
 
 export default function App() {
@@ -40,12 +42,29 @@ export default function App() {
   const [preferencias, cambiarPreferencias] = usePreferencias()
   const [esAdministrador, setEsAdministrador] = useState(false)
 
-  // Dónde está la persona, y qué hay que abrir al llegar: un proyecto o una sección del perfil.
-  // destinoInicial() consume el destino guardado: se lee una sola vez. Un enlace a un prompt abre
-  // la biblioteca; cualquier otro, la vitrina.
-  const [inicio] = useState(destinoInicial)
-  const [vista, setVista] = useState(inicio?.promptId ? 'biblioteca' : 'vitrina')
-  const [foco, setFoco] = useState(inicio)
+  // Dónde está la persona (la vista y, en Administración, la sección) y qué hay que abrir al
+  // llegar: un proyecto, un prompt o una sección del perfil. rutaInicial() consume el destino
+  // guardado: se lee una sola vez.
+  const [inicio] = useState(rutaInicial)
+  const [vista, setVista] = useState(inicio.vista)
+  const [seccion, setSeccion] = useState(inicio.seccion)
+  const [foco, setFoco] = useState(inicio.foco)
+
+  // La dirección queda en la forma #/vista: un enlace compartido ya cumplió al abrir su contenido.
+  useEffect(() => { escribirRuta(inicio.vista, inicio.seccion, { reemplazar: true }) }, [inicio])
+
+  // "Atrás" y "Adelante" del navegador cambian de vista sin recargar.
+  useEffect(() => {
+    const alVolver = () => {
+      const ruta = leerRuta()
+      if (!ruta) return
+      setVista(ruta.vista)
+      setSeccion(ruta.seccion)
+      if (ruta.foco) setFoco(ruta.foco)
+    }
+    window.addEventListener('popstate', alVolver)
+    return () => window.removeEventListener('popstate', alVolver)
+  }, [])
 
   // MSAL avisa ACQUIRE_TOKEN_SUCCESS en cada token pedido, incluso de caché, y cada aviso trae un
   // objeto de cuenta nuevo. Si se guardara tal cual, todo efecto que dependa de la cuenta volvería
@@ -73,10 +92,12 @@ export default function App() {
       .catch(() => setEsAdministrador(false))
   }, [usuario])
 
-  /** Lleva a una vista y, si corresponde, a lo que hay que abrir en ella. */
-  const irA = useCallback((nuevaVista, nuevoFoco = null) => {
+  /** Lleva a una vista (y a una sección, en Administración) y, si corresponde, a lo que hay que abrir. */
+  const irA = useCallback((nuevaVista, nuevoFoco = null, nuevaSeccion = null) => {
     setVista(nuevaVista)
+    setSeccion(nuevaSeccion)
     setFoco(nuevoFoco)
+    escribirRuta(nuevaVista, nuevaSeccion)
     window.scrollTo({ top: 0 })
   }, [])
 
@@ -104,6 +125,8 @@ export default function App() {
         cambiarPreferencias={cambiarPreferencias}
       />
       <main id="contenido" tabIndex={-1}>
+        {/* La clave cambia con la vista: cada una entra con una animación corta (estilos.css). */}
+        <div key={vista} className="vista">
         {vista === 'vitrina' && (
           <Vitrina
             foco={foco}
@@ -122,7 +145,10 @@ export default function App() {
             cambiarPreferencias={cambiarPreferencias}
           />
         )}
-        {vista === 'admin' && esAdministrador && <Administracion />}
+        {vista === 'admin' && esAdministrador && (
+          <Administracion seccion={seccion} alCambiarSeccion={(nueva) => irA('admin', null, nueva)} />
+        )}
+        </div>
       </main>
     </div>
   )
@@ -246,7 +272,7 @@ function Cabecera({ vista, irA, irAlAviso, correo, esAdministrador, preferencias
               <div className="panel-flotante angosto">
                 <p className="ayuda correo-cuenta">{correo}</p>
                 <button type="button" className="opcion" onClick={() => ir('perfil')}>Ver mi perfil</button>
-                <button type="button" className="opcion salir" onClick={cerrarSesion}>Cerrar sesión</button>
+                <button type="button" className="opcion salir" onClick={() => { olvidar(); cerrarSesion() }}>Cerrar sesión</button>
               </div>
             )}
           </div>
