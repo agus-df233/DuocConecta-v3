@@ -39,6 +39,12 @@ public class ConfiguracionClientesHttp {
         return construir(propiedades.getUrlMsContacto(), propiedades.getTimeoutSegundos());
     }
 
+    /** Cliente de ms-analitica (v3): las alertas que arma el consumidor de Kafka. */
+    @Bean
+    public RestClient clienteMsAnalitica(PropiedadesBff propiedades) {
+        return construir(propiedades.getUrlMsAnalitica(), propiedades.getTimeoutSegundos());
+    }
+
     /** Timeout de conexión y de lectura. Usa el cliente del JDK para no sumar una librería. */
     private RestClient construir(String urlBase, int segundos) {
         Duration timeout = Duration.ofSeconds(segundos);

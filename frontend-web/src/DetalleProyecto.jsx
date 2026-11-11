@@ -3,7 +3,7 @@
 // La separación importa: comentar es público entre quienes ya ven el proyecto; pedir colaborar es
 // lo único que intercambia datos privados, y solo si la otra persona acepta.
 import { useEffect, useId, useRef, useState } from 'react'
-import { listarComentarios, comentarProyecto } from './api'
+import { listarComentarios, comentarProyecto, registrarVistaProyecto, interaccionesDe } from './api'
 import { ESTADOS, fechaCorta, fechaRelativa, TEXTO_SOLICITUD } from './catalogo'
 import { useAtraparFoco } from './Ventana'
 
@@ -29,10 +29,29 @@ export default function DetalleProyecto({
   const autor = proyecto.autor ?? {}
   const primerNombre = autor.nombre?.split(' ')[0] ?? 'quien lo publicó'
 
+  // Lo que cuenta la analítica (Kafka) de esta semana. Nulo mientras no responde: no se muestra.
+  const [interes, setInteres] = useState(null)
+
   useEffect(() => {
     setComentarios(null)
     listarComentarios(proyecto.id).then(setComentarios).catch(() => setComentarios([]))
   }, [proyecto.id])
+
+  // Abrir el detalle es una vista: va a Kafka y suma a la tendencia (las propias no cuentan).
+  // El conteo se vuelve a pedir un momento después, cuando el consumidor ya la procesó.
+  useEffect(() => {
+    let vigente = true
+    const leer = () => interaccionesDe(proyecto.id)
+      .then((r) => { if (vigente) setInteres(r) })
+      .catch(() => { /* sin analítica, el detalle se ve igual */ })
+    setInteres(null)
+    registrarVistaProyecto(proyecto.id).catch(() => { /* una vista perdida no es un error para nadie */ })
+    leer()
+    const despues = setTimeout(leer, 2500)
+    return () => { vigente = false; clearTimeout(despues) }
+  }, [proyecto.id])
+
+  const vistas = interes?.conteos?.VISTA ?? 0
 
   // "Comentar" desde la tarjeta abre el panel con el cursor ya en el campo.
   useEffect(() => {
@@ -68,6 +87,11 @@ export default function DetalleProyecto({
                 proyecto.sede ?? autor.sede, fechaCorta(proyecto.fechaCreacion)]
                 .filter(Boolean).join(' · ')}
             </p>
+            {interes && (
+              <p className="interes" aria-live="polite">
+                {vistas === 1 ? '1 vista esta semana' : `${vistas} vistas esta semana`}
+              </p>
+            )}
           </div>
           <button type="button" className="cerrar" onClick={alCerrar} aria-label="Cerrar">×</button>
         </div>

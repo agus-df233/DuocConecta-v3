@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   listarProyectos, publicarProyecto, editarProyecto, eliminarProyecto,
-  solicitarColaboracion, colaboracionesEnviadas,
+  solicitarColaboracion, colaboracionesEnviadas, tendencias,
 } from './api'
 import { claimsDelToken } from './auth'
 import Aviso, { useAviso } from './Aviso'
@@ -21,6 +21,9 @@ import TarjetaProyecto from './TarjetaProyecto'
 // aparece solo, marcado como nuevo, sin recargar la página.
 const CADA = 20_000
 
+// Cuántos proyectos llevan la marca "En tendencia". Pocos, para que signifique algo.
+const EN_TENDENCIA = 3
+
 export default function Vitrina({ foco, alUsarFoco, escondidos, alEsconder }) {
   const [proyectos, setProyectos] = useState(null)
   const [miOid, setMiOid] = useState(null)
@@ -31,6 +34,8 @@ export default function Vitrina({ foco, alUsarFoco, escondidos, alEsconder }) {
   const [enVivo, setEnVivo] = useState(true)
   const [nuevos, setNuevos] = useState(new Set())
   const conocidos = useRef(null)
+  // Puntaje por proyecto, de la analítica (Kafka). Vacío si ms-analitica no responde.
+  const [puntajes, setPuntajes] = useState(new Map())
 
   const [abierto, setAbierto] = useState(null)       // { id, comentar }
   const [editando, setEditando] = useState(null)     // null cerrado · {} nuevo · proyecto si edita
@@ -57,6 +62,14 @@ export default function Vitrina({ foco, alUsarFoco, escondidos, alEsconder }) {
     setProyectos(lista)
   }), [])
 
+  /**
+   * La tendencia que arma el consumidor de Kafka. Es un extra: si falla, la vitrina sigue igual,
+   * solo sin la marca.
+   */
+  const cargarTendencia = useCallback(() => tendencias('PROYECTO', 20)
+    .then((lista) => setPuntajes(new Map(lista.map((t) => [t.recursoId, t.puntaje]))))
+    .catch(() => setPuntajes(new Map())), [])
+
   const cargarSolicitudes = useCallback(() => {
     // Una solicitud rechazada o retirada no bloquea para siempre: solo cuentan las que siguen en pie.
     // Si esta llamada falla no se puede saber a quién ya se le pidió, así que se avisa en vez
@@ -75,16 +88,20 @@ export default function Vitrina({ foco, alUsarFoco, escondidos, alEsconder }) {
     setError(null)
     cargarProyectos().catch((e) => { setProyectos((p) => p ?? []); setError(e.message) })
     cargarSolicitudes()
-  }, [cargarProyectos, cargarSolicitudes])
+    cargarTendencia()
+  }, [cargarProyectos, cargarSolicitudes, cargarTendencia])
 
   useEffect(() => { recargar() }, [recargar])
   useEffect(() => alCambiar('colaboraciones', cargarSolicitudes), [cargarSolicitudes])
 
   useEffect(() => {
     if (!enVivo) return undefined
-    const reloj = setInterval(() => cargarProyectos().catch(() => { /* se reintenta en la próxima vuelta */ }), CADA)
+    const reloj = setInterval(() => {
+      cargarProyectos().catch(() => { /* se reintenta en la próxima vuelta */ })
+      cargarTendencia()
+    }, CADA)
     return () => clearInterval(reloj)
-  }, [enVivo, cargarProyectos])
+  }, [enVivo, cargarProyectos, cargarTendencia])
 
   // Un aviso o un enlace compartido piden abrir un proyecto: se abre en cuanto la vitrina cargó.
   useEffect(() => {
@@ -156,6 +173,13 @@ export default function Vitrina({ foco, alUsarFoco, escondidos, alEsconder }) {
     () => (proyectos ?? []).filter((p) => !escondidos.includes(p.id)),
     [proyectos, escondidos])
   const visibles = useMemo(() => filtrar(disponibles, filtros), [disponibles, filtros])
+  // Solo se marcan proyectos que la persona ya ve: la analítica devuelve identificadores, y uno
+  // privado u oculto nunca aparece por aquí.
+  const enTendencia = useMemo(() => new Set(disponibles
+    .filter((p) => puntajes.get(p.id) > 0)
+    .sort((a, b) => puntajes.get(b.id) - puntajes.get(a.id))
+    .slice(0, EN_TENDENCIA)
+    .map((p) => p.id)), [disponibles, puntajes])
   const proyectoAbierto = proyectos?.find((p) => p.id === abierto?.id) ?? null
 
   if (proyectos === null) return <EsqueletoVitrina />
@@ -226,6 +250,7 @@ export default function Vitrina({ foco, alUsarFoco, escondidos, alEsconder }) {
               proyecto={p}
               esMio={esPropio(p, miOid)}
               esNuevo={nuevos.has(p.id)}
+              enTendencia={enTendencia.has(p.id)}
               estadoSolicitud={estadoPorProyecto.get(p.id)}
               alAbrir={() => setAbierto({ id: p.id })}
               alComentar={() => setAbierto({ id: p.id, comentar: true })}

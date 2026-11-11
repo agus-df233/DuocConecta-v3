@@ -1,10 +1,10 @@
 // Una tarjeta de la vitrina: lo justo para decidir si vale la pena abrirla.
-// El detalle completo va en el panel lateral. Un proyecto abierto (publicado por DuocConecta) se
+// El detalle completo va en el panel lateral. "En tendencia" sale de la analítica (Kafka). Un proyecto abierto (publicado por DuocConecta) se
 // puede comentar, pero no tiene botón de colaborar.
 import { ESTADOS, iniciales, fechaRelativa, TEXTO_SOLICITUD } from './catalogo'
 
 export default function TarjetaProyecto({
-  proyecto, esMio, esNuevo, estadoSolicitud, alAbrir, alColaborar, alComentar, alEditar, alEsconder,
+  proyecto, esMio, esNuevo, enTendencia, estadoSolicitud, alAbrir, alColaborar, alComentar, alEditar, alEsconder,
 }) {
   const oculto = proyecto.visibilidad !== 'PUBLICO'
   const autor = proyecto.autor ?? {}
@@ -31,6 +31,9 @@ export default function TarjetaProyecto({
       <div className="etiquetas">
         <span className={`insignia ${proyecto.estado}`}>{ESTADOS[proyecto.estado] ?? proyecto.estado}</span>
         {esNuevo && <span className="insignia-nuevo">Nuevo</span>}
+        {enTendencia && (
+          <span className="insignia tendencia" title="De lo que más interés tuvo esta semana">En tendencia</span>
+        )}
         {proyecto.abierto && <span className="insignia abierto">Abierto · solo comentarios</span>}
         {esMio && <span className="insignia propio">Tuyo</span>}
         {esMio && oculto && <span className="insignia oculto">Fuera de la vitrina</span>}

@@ -208,3 +208,55 @@ export const comentariosParaModerar = () => pedir('/api/v1/proyectos/admin/comen
 /** Borra un comentario. Quien lo escribió recibe un aviso. */
 export const eliminarComentarioModerado = (id) =>
   pedir(`/api/v1/proyectos/admin/comentarios/${id}`, { method: 'DELETE' })
+
+// --- Streaming (v3): Kafka -----------------------------------------------------
+//
+// Abrir un proyecto es una señal que va solo a Kafka. La tendencia la arma ms-analitica, que
+// consume los tópicos: si está caído, la vitrina sigue igual, solo sin la marca "En tendencia".
+
+/** Anota que se abrió el detalle de un proyecto. Las vistas de la dueña no cuentan. */
+export const registrarVistaProyecto = (id) =>
+  pedir(`/api/v1/proyectos/${id}/vistas`, { method: 'POST' })
+
+/** Lo que está en tendencia: identificadores y puntaje de los últimos 7 días. */
+export const tendencias = (tipoRecurso = 'PROYECTO', limite = 20) =>
+  pedir(`/api/v1/analitica/tendencias?tipoRecurso=${tipoRecurso}&limite=${limite}`)
+
+/** Cuántas interacciones tuvo un proyecto o un prompt esta semana. */
+export const interaccionesDe = (id) => pedir(`/api/v1/analitica/recursos/${id}`)
+
+// --- Administración de Kafka (solo ADMINISTRADOR) --------------------------------
+
+/** Alertas de actividad que detectó el consumidor, con el nombre de cada persona (BFF). */
+export const alertasActividad = (pendientes = false) =>
+  pedir(`/api/v1/bff/admin/alertas?pendientes=${pendientes}`)
+
+/** Marca una alerta como revisada. */
+export const marcarAlertaRevisada = (id) =>
+  pedir(`/api/v1/analitica/admin/alertas/${id}/revisada`, { method: 'PATCH' })
+
+/** Registros por hora de los dos tópicos. */
+export const metricasActividad = (horas = 24) => pedir(`/api/v1/analitica/admin/metricas?horas=${horas}`)
+
+/** Estado de los consumidores de Kafka de ms-analitica. */
+export const consumidoresKafka = () => pedir('/api/v1/analitica/admin/consumidores')
+
+/** Pausa los consumidores: siguen en su grupo pero no leen, y el lag sube. */
+export const pausarConsumidoresKafka = () =>
+  pedir('/api/v1/analitica/admin/consumidores/pausa', { method: 'POST' })
+
+/** Los reanuda: siguen desde su último offset confirmado. */
+export const reanudarConsumidoresKafka = () =>
+  pedir('/api/v1/analitica/admin/consumidores/reanudar', { method: 'POST' })
+
+/** Brokers vivos y controlador (ms-mensajeria). */
+export const clusterKafka = () => pedir('/api/v1/mensajeria/kafka/cluster')
+
+/** Tópicos de la plataforma con su configuración. */
+export const topicosKafka = () => pedir('/api/v1/mensajeria/kafka/topicos')
+
+/** Grupos de consumidores con su lag total. */
+export const gruposKafka = () => pedir('/api/v1/mensajeria/kafka/grupos')
+
+/** Un grupo: quién atiende cada partición, offsets y lag. */
+export const grupoKafka = (id) => pedir(`/api/v1/mensajeria/kafka/grupos/${encodeURIComponent(id)}`)

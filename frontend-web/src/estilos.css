@@ -975,3 +975,11 @@ label .ayuda { font-weight: 400; }
 .iniciales.plataforma { background: var(--azul); display: flex; align-items: center; justify-content: center; }
 .iniciales.plataforma .logo { width: 13px; height: 13px; border-radius: 4px 1px 4px 1px; background: var(--amarillo); }
 .nota-abierto { background: var(--azul-fondo); border: 1px solid var(--azul-borde); border-radius: 9px; padding: 9px 12px; margin: 0 0 4px; }
+
+/* --- Streaming (v3): lo que llega por Kafka --- */
+.insignia.tendencia       { background: var(--ocre-fondo); color: var(--ocre); border: 1px solid var(--crema-borde); }
+.insignia.revisada        { background: var(--verde-fondo); color: var(--verde); }
+.insignia.pendiente-revision { background: var(--rojo-fondo); color: var(--rojo-texto); border: 1px solid var(--rojo-borde); }
+.drawer-cabecera .interes { margin: 6px 0 0; font-size: 12.5px; color: var(--tinta-apagada); }
+.subtitulo-admin { font-family: var(--titulos); font-size: 17px; font-weight: 700; margin: 24px 0 4px; color: var(--azul); }
+.casilla { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--tinta-media); }

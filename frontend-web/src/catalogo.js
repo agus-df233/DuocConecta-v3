@@ -125,3 +125,32 @@ export const TEXTO_SOLICITUD = {
   PENDIENTE: 'Solicitud enviada',
   ACEPTADA: 'Ya colaboran',
 }
+
+// --- Streaming (v3) -----------------------------------------------------------
+
+/** Lo que hizo una persona, en los registros de Kafka y en las alertas. */
+export const TIPOS_ACTIVIDAD = {
+  VISTA: 'Vistas',
+  COPIA: 'Copias de prompts',
+  COMENTARIO: 'Comentarios',
+  SOLICITUD_COLABORACION: 'Solicitudes de colaboración',
+  VALORACION: 'Valoraciones',
+  BIFURCACION: 'Bifurcaciones',
+  PUBLICACION: 'Publicaciones',
+  COLABORADOR_AGREGADO: 'Colaboradores agregados',
+  PUBLICADO: 'Publicados',
+  OCULTADO: 'Ocultados',
+  RESTAURADO: 'Restaurados',
+  ELIMINADO: 'Eliminados',
+}
+
+/** Una duración en milisegundos, como la dice una persona: "7 días", "24 h", "30 min". */
+export function duracion(ms) {
+  const n = Number(ms)
+  if (!Number.isFinite(n) || n < 0) return 'Sin límite'
+  const dia = 86_400_000
+  const hora = 3_600_000
+  if (n % dia === 0) return n / dia === 1 ? '1 día' : `${n / dia} días`
+  if (n % hora === 0) return `${n / hora} h`
+  return `${Math.round(n / 60_000)} min`
+}

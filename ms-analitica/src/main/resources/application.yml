@@ -170,6 +170,10 @@ duocconecta:
       duoc.cl: ACADEMICO
 
 management:
+  # common-eventos trae el cliente de RabbitMQ, pero este servicio no lo usa: su salud no depende de él.
+  health:
+    rabbit:
+      enabled: false
   endpoints:
     web:
       exposure:

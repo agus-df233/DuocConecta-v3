@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +32,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.CommonErrorHandler;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.listener.ListenerExecutionFailedException;
 import org.springframework.kafka.listener.RecordInterceptor;
 import org.springframework.kafka.support.serializer.DelegatingByTypeSerializer;
 import org.springframework.kafka.support.serializer.JacksonJsonSerializer;
@@ -89,7 +91,8 @@ public class ConfiguracionConsumidores {
     /** Reintentos con espera creciente y, al final, la DLT. Spring Boot lo conecta a todos los listeners. */
     @Bean
     public CommonErrorHandler manejadorDeErrores(KafkaTemplate<Object, Object> plantillaDescartes,
-                                                 PropiedadesKafka propiedades) {
+                                                 PropiedadesKafka propiedades,
+                                                 @Value("${duocconecta.analitica.grupos.metricas}") String grupoMetricas) {
         var recuperador = new DeadLetterPublishingRecoverer(plantillaDescartes,
                 (registro, error) -> new TopicPartition(registro.topic() + propiedades.getSufijoDlt(), registro.partition()));
         recuperador.setHeadersFunction((registro, error) -> {
@@ -102,6 +105,13 @@ public class ConfiguracionConsumidores {
         espera.setMaxAttempts(3);
 
         var manejador = new DefaultErrorHandler((registro, error) -> {
+            // Métricas lee los mismos tópicos que tendencias y alertas: si también escribiera en la
+            // DLT, cada registro malo quedaría dos veces. El que es dueño de la reacción lo descarta.
+            if (error instanceof ListenerExecutionFailedException fallo && grupoMetricas.equals(fallo.getGroupId())) {
+                log.warn("{}: registro no procesable de {} (partición {}, offset {}) se salta sin contarlo: {}",
+                        grupoMetricas, registro.topic(), registro.partition(), registro.offset(), motivo(error));
+                return;
+            }
             log.error("Registro no procesable de {} (partición {}, offset {}, clave {}) → {}{}: {}",
                     registro.topic(), registro.partition(), registro.offset(), registro.key(),
                     registro.topic(), propiedades.getSufijoDlt(), motivo(error));

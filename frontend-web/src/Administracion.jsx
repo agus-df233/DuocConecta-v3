@@ -1,4 +1,5 @@
-// Vista de administración: dashboard de la comunidad y moderación de proyectos y comentarios.
+// Vista de administración: dashboard de la comunidad, moderación de proyectos y comentarios, y lo
+// que llega por Kafka (alertas, actividad y el estado del streaming).
 // Solo aparece para ADMINISTRADOR, pero quien protege de verdad es el backend: cada ruta /admin
 // responde 403 a cualquier otra cuenta.
 import { useCallback, useEffect, useState } from 'react'
@@ -13,6 +14,8 @@ import {
   publicarProyectoAbierto,
   resumenAdministracion,
 } from './api'
+import { Actividad, Alertas, Streaming } from './AdministracionStreaming'
+import { Barras, Cifra } from './Cifras'
 import Aviso, { useAviso } from './Aviso'
 import { ESTADOS, fechaCorta, fechaLarga } from './catalogo'
 import Confirmar from './Confirmar'
@@ -23,6 +26,9 @@ const PESTANAS = [
   { id: 'resumen', texto: 'Resumen' },
   { id: 'proyectos', texto: 'Proyectos' },
   { id: 'comentarios', texto: 'Comentarios' },
+  { id: 'alertas', texto: 'Alertas' },
+  { id: 'actividad', texto: 'Actividad' },
+  { id: 'streaming', texto: 'Streaming' },
 ]
 
 const VISIBILIDADES = { PUBLICO: 'Público', COMPARTIDO: 'Compartido', PRIVADO: 'Privado' }
@@ -35,7 +41,7 @@ export default function Administracion() {
       <div className="titulo-pagina">
         <div>
           <h1>Administración</h1>
-          <p>Cifras de la comunidad y moderación de la vitrina.</p>
+          <p>Cifras de la comunidad, moderación de la vitrina y lo que llega por Kafka.</p>
         </div>
       </div>
 
@@ -51,6 +57,9 @@ export default function Administracion() {
       {pestana === 'resumen' && <Resumen />}
       {pestana === 'proyectos' && <ModerarProyectos />}
       {pestana === 'comentarios' && <ModerarComentarios />}
+      {pestana === 'alertas' && <Alertas />}
+      {pestana === 'actividad' && <Actividad />}
+      {pestana === 'streaming' && <Streaming />}
     </section>
   )
 }
@@ -88,42 +97,6 @@ function Resumen() {
         <Barras titulo="Perfiles por sede" conteos={comunidad.porSede} />
       </div>
     </>
-  )
-}
-
-function Cifra({ valor, texto, detalle, alerta = false }) {
-  return (
-    <div className={alerta ? 'cifra alerta' : 'cifra'}>
-      <strong>{valor}</strong>
-      <span>{texto}</span>
-      {detalle && <small>{detalle}</small>}
-    </div>
-  )
-}
-
-/** Barras horizontales hechas con CSS: el ancho es proporcional a la categoría más grande. */
-function Barras({ titulo, conteos = [], etiquetas = {}, ayuda }) {
-  const maximo = Math.max(1, ...conteos.map((c) => c.cantidad))
-  return (
-    <div className="tarjeta barras">
-      <h2>{titulo}</h2>
-      {ayuda && <p className="ayuda">{ayuda}</p>}
-      {conteos.length === 0 ? (
-        <p className="ayuda">Todavía no hay datos.</p>
-      ) : (
-        <ul>
-          {conteos.map((c) => (
-            <li key={c.clave}>
-              <span className="etiqueta" title={etiquetas[c.clave] ?? c.clave}>{etiquetas[c.clave] ?? c.clave}</span>
-              <span className="riel-barra">
-                <span className="relleno" style={{ '--proporcion': c.cantidad / maximo }} />
-              </span>
-              <span className="numero">{c.cantidad}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   )
 }
 

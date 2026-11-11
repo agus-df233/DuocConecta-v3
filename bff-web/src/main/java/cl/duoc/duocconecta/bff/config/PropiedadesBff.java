@@ -19,6 +19,12 @@ public class PropiedadesBff {
     private String urlMsContacto = "http://localhost:8083";
 
     /** Cuánto se espera una respuesta de un microservicio antes de darla por perdida, en segundos. */
+    /**
+     * ms-analitica (v3). Va en otro servicio de ECS, así que en la nube no es localhost: es el
+     * DNS del ALB, que lo enruta por la ruta /api/v1/analitica.
+     */
+    private String urlMsAnalitica = "http://localhost:8086";
+
     private int timeoutSegundos = 5;
 
     /** Configuración de CORS para el frontend. */
@@ -38,6 +44,14 @@ public class PropiedadesBff {
 
     public void setUrlMsProyectos(String urlMsProyectos) {
         this.urlMsProyectos = urlMsProyectos;
+    }
+
+    public String getUrlMsAnalitica() {
+        return urlMsAnalitica;
+    }
+
+    public void setUrlMsAnalitica(String urlMsAnalitica) {
+        this.urlMsAnalitica = urlMsAnalitica;
     }
 
     public String getUrlMsContacto() {
