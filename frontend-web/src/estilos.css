@@ -1075,3 +1075,25 @@ textarea.prompt-texto { width: 100%; max-height: none; }
 }
 @keyframes subeHoja { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes bajaHoja { to { transform: translateY(100%); } }
+
+/* --- Compartir rápido (v3) --- */
+.compartir-rapido { padding: 16px 22px 4px; display: grid; gap: 12px; }
+.compartir-rapido .rotulo, .compartir-titulo-vista { margin: 0; }
+.compartir-titulo-vista { padding: 10px 22px 0; }
+.botones-redes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 128px), 1fr)); gap: 8px; }
+.boton-red-rapido {
+  display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 12px; border-radius: 10px;
+  border: 1px solid var(--borde); background: #fff; color: var(--tinta); font: 600 13.5px var(--cuerpo);
+  text-decoration: none; cursor: pointer; transition: transform .12s, border-color .12s;
+}
+.boton-red-rapido:hover { transform: translateY(-1px); border-color: var(--azul-borde); }
+.icono-red {
+  width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; flex: none;
+  font-size: 11px; font-weight: 800; color: #fff; background: var(--azul-claro);
+}
+.boton-red-rapido.whatsapp .icono-red { background: #1E9E5A; }
+.boton-red-rapido.linkedin .icono-red { background: #0A66C2; }
+.boton-red-rapido.x .icono-red { background: #111; }
+.boton-red-rapido.telegram .icono-red { background: #229ED9; }
+.boton-red-rapido.correo .icono-red { background: var(--ocre); }
+.boton-red-rapido.nativo .icono-red { background: var(--azul); font-size: 15px; }

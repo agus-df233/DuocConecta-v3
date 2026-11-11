@@ -8,6 +8,7 @@ import { claimsDelToken } from './auth'
 import { enCache } from './cache'
 import Aviso, { useAviso } from './Aviso'
 import { CATEGORIAS_PROMPT, ESCUELAS, HERRAMIENTAS_IA, ORDENES_PROMPT } from './catalogo'
+import Compartir from './Compartir'
 import Confirmar from './Confirmar'
 import DetallePrompt from './DetallePrompt'
 import FormularioPrompt from './FormularioPrompt'
@@ -32,6 +33,7 @@ export default function Biblioteca({ foco, alUsarFoco }) {
   const [editando, setEditando] = useState(null)      // null · {} nuevo · prompt
   const [esCopia, setEsCopia] = useState(false)
   const [borrando, setBorrando] = useState(null)
+  const [compartiendo, setCompartiendo] = useState(null)
   const { texto: aviso, avisar, cerrar: cerrarAviso } = useAviso()
 
   useEffect(() => {
@@ -215,6 +217,7 @@ export default function Biblioteca({ foco, alUsarFoco }) {
           alEditar={(p) => { setAbierto(null); setEsCopia(false); setEditando(p) }}
           alBorrar={setBorrando}
           alAbrirOtro={setAbierto}
+          alCompartir={setCompartiendo}
           alCerrar={() => setAbierto(null)}
         />
       )}
@@ -222,6 +225,10 @@ export default function Biblioteca({ foco, alUsarFoco }) {
       {editando && (
         <FormularioPrompt prompt={editando.id ? editando : null} esCopia={esCopia} alGuardar={guardar}
                           alCerrar={() => { setEditando(null); setEsCopia(false) }} />
+      )}
+
+      {compartiendo && (
+        <Compartir prompt={compartiendo} alCerrar={() => setCompartiendo(null)} alAvisar={avisar} />
       )}
 
       {borrando && (

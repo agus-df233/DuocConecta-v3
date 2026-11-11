@@ -6,7 +6,7 @@ import { CATEGORIAS_PROMPT, fechaCorta } from './catalogo'
 import { ElegirEstrellas, PromedioEstrellas } from './Estrellas'
 import { useAtraparFoco, useCierreAnimado } from './Ventana'
 
-export default function DetallePrompt({ id, miOid, alCopiar, alBifurcar, alEditar, alBorrar, alAbrirOtro, alCerrar }) {
+export default function DetallePrompt({ id, miOid, alCopiar, alBifurcar, alEditar, alBorrar, alAbrirOtro, alCompartir, alCerrar }) {
   const [prompt, setPrompt] = useState(null)
   const [interes, setInteres] = useState(null)
   const [error, setError] = useState(null)
@@ -91,6 +91,7 @@ export default function DetallePrompt({ id, miOid, alCopiar, alBifurcar, alEdita
                 <pre className="prompt-texto">{prompt.contenido}</pre>
                 <div className="acciones">
                   <button type="button" className="principal" onClick={() => alCopiar(prompt)}>Copiar prompt</button>
+                  <button type="button" className="secundario" onClick={() => alCompartir(prompt)}>Compartir</button>
                 </div>
               </div>
 

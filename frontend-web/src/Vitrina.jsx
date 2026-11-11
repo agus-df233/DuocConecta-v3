@@ -8,7 +8,7 @@ import {
 import { claimsDelToken } from './auth'
 import { enCache } from './cache'
 import Aviso, { useAviso } from './Aviso'
-import CompartirProyecto from './CompartirProyecto'
+import Compartir from './Compartir'
 import Confirmar from './Confirmar'
 import DetalleProyecto from './DetalleProyecto'
 import { alCambiar } from './eventos'
@@ -283,7 +283,7 @@ export default function Vitrina({ foco, alUsarFoco, escondidos, alEsconder }) {
       )}
 
       {compartiendo && (
-        <CompartirProyecto proyecto={compartiendo} alCerrar={() => setCompartiendo(null)} alAvisar={avisar} />
+        <Compartir proyecto={compartiendo} alCerrar={() => setCompartiendo(null)} alAvisar={avisar} />
       )}
 
       {borrando && (

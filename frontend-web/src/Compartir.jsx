@@ -1,10 +1,50 @@
-// Ventana para compartir un proyecto en Instagram, WhatsApp o GitHub, con una vista previa de
-// cómo se verá en cada uno. Nada se publica solo: se copia el texto o se abre la red con el
-// mensaje listo, y la persona decide.
+// Ventana para compartir un proyecto o un prompt. Arriba, lo rápido: el menú nativo del celular
+// y los botones de WhatsApp, LinkedIn, X, Telegram y correo. En un proyecto, además, Instagram,
+// WhatsApp y GitHub con una vista previa de cómo se verá. Nada se publica solo: se abre la red con
+// el mensaje listo, y la persona decide. El enlace exige iniciar sesión: no expone nada sin login.
 import { useState } from 'react'
-import { ESTADOS, iniciales } from './catalogo'
-import { enlaceDeProyecto } from './enlaces'
+import { CATEGORIAS_PROMPT, ESTADOS, iniciales } from './catalogo'
+import { enlaceDePrompt, enlaceDeProyecto } from './enlaces'
 import Ventana from './Ventana'
+
+/** El menú nativo de compartir solo tiene sentido en pantallas táctiles: en el computador se esconde. */
+const hayMenuNativo = () => typeof navigator.share === 'function'
+  && Boolean(window.matchMedia?.('(pointer: coarse)').matches)
+
+/** El texto corto y el enlace de un proyecto o de un prompt. */
+function contenidoDe(proyecto, prompt) {
+  if (prompt) {
+    const autor = prompt.autor?.nombre?.split(' ')[0]
+    return {
+      titulo: prompt.titulo,
+      texto: `Este prompt me sirvió: «${prompt.titulo}»${autor ? ` (de ${autor})` : ''}. Está en la biblioteca de DuocConecta:`,
+      url: enlaceDePrompt(prompt.id),
+      etiqueta: CATEGORIAS_PROMPT[prompt.categoria] ?? 'Prompt',
+    }
+  }
+  const primer = proyecto.autor?.nombre?.split(' ')[0] ?? 'alguien de la comunidad'
+  return {
+    titulo: proyecto.nombre,
+    texto: proyecto.estado === 'BUSCANDO_EQUIPO'
+      ? `${primer} está buscando equipo para «${proyecto.nombre}». Si te interesa, pide colaborar en DuocConecta:`
+      : `Mira «${proyecto.nombre}», proyecto de ${primer} en DuocConecta:`,
+    url: enlaceDeProyecto(proyecto.id),
+    etiqueta: ESTADOS[proyecto.estado] ?? 'Proyecto',
+  }
+}
+
+/** Las redes con el mensaje listo. Cada una se abre en otra pestaña con su propio formulario. */
+function redes({ titulo, texto, url }) {
+  const t = encodeURIComponent(texto)
+  const u = encodeURIComponent(url)
+  return [
+    { id: 'whatsapp', red: 'WhatsApp', href: `https://wa.me/?text=${encodeURIComponent(`${texto} ${url}`)}` },
+    { id: 'linkedin', red: 'LinkedIn', href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}` },
+    { id: 'x', red: 'X', href: `https://x.com/intent/post?text=${t}&url=${u}` },
+    { id: 'telegram', red: 'Telegram', href: `https://t.me/share/url?url=${u}&text=${t}` },
+    { id: 'correo', red: 'Correo', href: `mailto:?subject=${encodeURIComponent(`${titulo} · DuocConecta`)}&body=${encodeURIComponent(`${texto}\n\n${url}`)}` },
+  ]
+}
 
 /** Copia al portapapeles. El respaldo con textarea cubre los navegadores sin clipboard API. */
 async function copiar(texto) {
@@ -64,12 +104,10 @@ function canales(proyecto) {
   }
 }
 
-export default function CompartirProyecto({ proyecto, alCerrar, alAvisar }) {
-  const [canal, setCanal] = useState('instagram')
+/** `proyecto` o `prompt`: lo que se comparte. */
+export default function Compartir({ proyecto, prompt, alCerrar, alAvisar }) {
+  const contenido = contenidoDe(proyecto, prompt)
   const [copiado, setCopiado] = useState(null)
-  const todos = canales(proyecto)
-  const actual = todos[canal]
-  const autor = proyecto.autor ?? {}
 
   const copiarYAvisar = async (texto, cual, mensaje) => {
     await copiar(texto)
@@ -77,8 +115,54 @@ export default function CompartirProyecto({ proyecto, alCerrar, alAvisar }) {
     alAvisar(mensaje)
   }
 
+  const menuNativo = async () => {
+    try {
+      await navigator.share({ title: contenido.titulo, text: contenido.texto, url: contenido.url })
+    } catch {
+      // La persona cerró el menú: no es un error.
+    }
+  }
+
   return (
-    <Ventana titulo={`Compartir «${proyecto.nombre}»`} alCerrar={alCerrar} ancha enfocarCampo={false}>
+    <Ventana titulo={`Compartir «${contenido.titulo}»`} alCerrar={alCerrar} ancha enfocarCampo={false}>
+      <div className="compartir-rapido">
+        <p className="rotulo">Compartir rápido</p>
+        <div className="botones-redes">
+          {hayMenuNativo() && (
+            <button type="button" className="boton-red-rapido nativo" onClick={menuNativo}>
+              <span className="icono-red" aria-hidden="true">⤴</span>Compartir…
+            </button>
+          )}
+          {redes(contenido).map((r) => (
+            <a key={r.id} className={`boton-red-rapido ${r.id}`} href={r.href} target="_blank" rel="noopener noreferrer">
+              <span className="icono-red" aria-hidden="true">{r.red.slice(0, r.id === 'x' ? 1 : 2)}</span>
+              {r.red}<span className="solo-lector"> (se abre en otra pestaña)</span>
+            </a>
+          ))}
+        </div>
+        <div className="compartir-enlace">
+          <span>{contenido.url}</span>
+          <button type="button" className="enlace" onClick={() => copiarYAvisar(contenido.url, 'enlace', 'Enlace copiado.')}>
+            {copiado === 'enlace' ? 'Enlace copiado' : 'Copiar enlace'}
+          </button>
+        </div>
+        <p className="ayuda">Quien abra el enlace tendrá que iniciar sesión con su cuenta para verlo.</p>
+      </div>
+      {proyecto && <ConVistaPrevia proyecto={proyecto} copiarYAvisar={copiarYAvisar} copiado={copiado} setCopiado={setCopiado} />}
+    </Ventana>
+  )
+}
+
+/** Instagram, WhatsApp y GitHub con una vista previa: solo para proyectos. */
+function ConVistaPrevia({ proyecto, copiarYAvisar, copiado, setCopiado }) {
+  const [canal, setCanal] = useState('instagram')
+  const todos = canales(proyecto)
+  const actual = todos[canal]
+  const autor = proyecto.autor ?? {}
+
+  return (
+    <>
+      <p className="rotulo compartir-titulo-vista">Con vista previa</p>
       <div className="compartir">
         <div className="compartir-canales" role="tablist" aria-label="Elige dónde compartir">
           {['instagram', 'whatsapp', 'github'].map((k) => (
@@ -166,15 +250,9 @@ export default function CompartirProyecto({ proyecto, alCerrar, alAvisar }) {
             <button type="button" className="secundario" onClick={() => copiarYAvisar(actual.texto, canal, 'Copiado al portapapeles.')}>
               {copiado === canal ? actual.copiado : actual.copiarTexto}
             </button>
-            <div className="compartir-enlace">
-              <span>{todos.url}</span>
-              <button type="button" className="enlace" onClick={() => copiarYAvisar(todos.url, 'enlace', 'Enlace copiado.')}>
-                {copiado === 'enlace' ? 'Enlace copiado' : 'Copiar enlace'}
-              </button>
-            </div>
           </div>
         </div>
       </div>
-    </Ventana>
+    </>
   )
 }

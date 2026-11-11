@@ -637,6 +637,7 @@ cmd_front() {
        VITE_COGNITO_AUTORIDAD="$COGNITO_ISSUER_URI" \
        VITE_COGNITO_CLIENT_ID="$COGNITO_AUDIENCIA" \
        VITE_COGNITO_DOMINIO="$COGNITO_DOMINIO" \
+       VITE_SITIO_URL="https://$API_ID.execute-api.$REGION.amazonaws.com" \
        VITE_BFF_URL="" npm run build --silent )
   ok "compilado"
 
