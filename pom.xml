@@ -36,6 +36,7 @@
         <module>ms-contacto</module>
         <module>ms-notificaciones</module>
         <module>ms-mensajeria</module>
+        <module>ms-analitica</module>
         <module>bff-web</module>
     </modules>
 

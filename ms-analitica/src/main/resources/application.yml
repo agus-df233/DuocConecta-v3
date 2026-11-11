@@ -1,0 +1,194 @@
+# Configuración de ms-analitica (v3): consumidores de Kafka.
+# Ningún valor sensible está escrito aquí: todo viene por variable de entorno.
+
+server:
+  port: 8086
+
+spring:
+  application:
+    name: ms-analitica
+
+  # Cliente de Kafka de los consumidores. Los nombres de los tópicos van en duocconecta.kafka.
+  kafka:
+    # Los tres brokers: basta que uno responda para descubrir el clúster completo.
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092,localhost:9093,localhost:9094}
+    client-id: ${spring.application.name}
+    consumer:
+      # Un grupo nuevo empieza desde lo más antiguo que el tópico conserva: así se puede
+      # reconstruir la vista releyendo los 7 días de retención.
+      auto-offset-reset: earliest
+      # El offset lo confirma el contenedor después de procesar cada registro (ack-mode: record),
+      # nunca un temporizador: así un registro no se da por leído si el proceso falló.
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # ErrorHandlingDeserializer envuelve al de JSON: un registro ilegible no tumba al consumidor
+      # en un bucle, sino que llega al manejador de errores y termina en la DLT.
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      max-poll-records: 50
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        # El tipo lo decide cada listener según su tópico (spring.json.value.default.type), no una
+        # cabecera del productor. Solo se aceptan los DTO del contrato.
+        spring.json.use.type.headers: false
+        spring.json.trusted.packages: cl.duoc.duocconecta.comun.eventos.kafka
+        # Al sumar o quitar un consumidor, solo se mueven las particiones necesarias: los demás
+        # siguen leyendo durante el rebalanceo.
+        partition.assignment.strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+        # Si un consumidor deja de responder 30 s, el grupo reparte sus particiones.
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+    listener:
+      ack-mode: record
+      # Tres hilos por grupo, uno por partición. Un cuarto quedaría sin partición, ocioso.
+      concurrency: 3
+      auto-startup: ${CONSUMIDORES_ACTIVOS:true}
+      # Si Kafka no está al arrancar, el servicio levanta igual y los consumidores reintentan solos.
+      missing-topics-fatal: false
+    # Productor de las DLT (ver ConfiguracionConsumidores).
+    producer:
+      acks: all
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/duocconecta}
+    username: ${DB_USER:duocconecta}
+    password: ${DB_PASSWORD:duocconecta}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: analitica
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    schemas: analitica
+    default-schema: analitica
+    # En RDS no corre init.sql: el schema lo crea Flyway.
+    create-schemas: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
+
+duocconecta:
+  kafka:
+    habilitada: ${KAFKA_HABILITADA:true}
+    origen: ${spring.application.name}
+    sufijo-dlt: .dlt
+    topicos:
+      interacciones:
+        nombre: duocconecta.contenido.interacciones
+      actividad:
+        nombre: duocconecta.usuarios.actividad
+
+  analitica:
+    # Grupos de consumidores. Cada grupo recibe todos los registros de su tópico; dentro de un
+    # grupo, cada partición la atiende un solo consumidor.
+    grupos:
+      tendencias: analitica-tendencias
+      alertas: analitica-alertas
+      metricas: analitica-metricas
+    ventana-tendencia-dias: 7          # igual que la retención de interacciones
+    retencion-actividad-horas: 24      # igual que la retención de actividad
+    # Cuánto suma cada interacción. Una solicitud o una bifurcación dice más que una vista.
+    pesos:
+      PROYECTO:
+        VISTA: 1
+        COMENTARIO: 3
+        SOLICITUD_COLABORACION: 5
+        COLABORADOR_AGREGADO: 5
+      PROMPT:
+        VISTA: 1
+        COPIA: 2
+        COMENTARIO: 3
+        VALORACION: 3
+        BIFURCACION: 5
+    # "Más de N veces en M minutos" es una ráfaga. Para la demo se bajan por variable de entorno.
+    alertas:
+      COMENTARIO:
+        umbral: ${ALERTA_COMENTARIOS:8}
+        ventana-minutos: ${ALERTA_VENTANA_MINUTOS:5}
+      SOLICITUD_COLABORACION:
+        umbral: ${ALERTA_SOLICITUDES:5}
+        ventana-minutos: 10
+      VALORACION:
+        umbral: ${ALERTA_VALORACIONES:10}
+        ventana-minutos: ${ALERTA_VENTANA_MINUTOS:5}
+
+  seguridad:
+    # Client-id del registro de la API en Azure AD. Es la audiencia que debe traer el token.
+    audiencia: ${AZURE_CLIENT_ID}
+
+    # Azure AD emite distintos claims según el tipo de cuenta y la configuración del tenant,
+    # por eso se prueban varios en orden en vez de depender de uno solo.
+    #
+    # 'email' va primero a propósito. En las cuentas invitadas (B2B) el UPN tiene la forma
+    # nombre_dominio.cl#EXT#@tenant.onmicrosoft.com, y el dominio real del correo institucional
+    # solo aparece en 'email'. Si 'preferred_username' fuera primero, se leería el dominio del
+    # tenant en vez del de Duoc y la asignación de rol quedaría mal.
+    claims-correo:
+      - email
+      - preferred_username
+      - upn
+      - unique_name
+
+    claims-nombre:
+      - name
+      - given_name
+      - preferred_username
+
+    # Grupos o roles que vienen en el token: App Roles de Entra ID ('roles') y grupos del user pool
+    # de Cognito ('cognito:groups'). Se suman al rol del dominio, nunca lo reemplazan.
+    claims-roles:
+      - roles
+      - cognito:groups
+
+    # Login con Google: Cognito emite un ID token con su propio emisor y audiencia. Una entrada con
+    # issuer-uri vacío se ignora, así en local sin Cognito todo funciona solo con Microsoft.
+    emisores-adicionales:
+      - issuer-uri: ${COGNITO_ISSUER_URI:}
+        audiencia: ${COGNITO_AUDIENCIA:}
+        # Entra ID no emite email_verified; Cognito sí, y sin verificar no se da rol.
+        exigir-correo-verificado: true
+
+    # Rol ADMINISTRADOR por lista (además del App Role o del grupo ADMINISTRADOR): correos separados por
+    # coma. Vacía por defecto; el valor real va en .env o en la task definition, nunca aquí.
+    administradores: ${ADMINISTRADORES:}
+    # Cuentas externas (Google) con su rol: correo=ROL separados por coma. Fuera de la lista, 403.
+    correos-permitidos: ${CORREOS_PERMITIDOS:}
+
+    # Mapa de dominio de correo a rol. Sumar un dominio nuevo es agregar una línea aquí:
+    # no hace falta tocar el código.
+    dominios:
+      duocuc.cl: ESTUDIANTE
+      profesor.duoc.cl: PROFESOR
+      duoc.cl: ACADEMICO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+logging:
+  level:
+    cl.duoc.duocconecta: ${LOG_NIVEL:INFO}
+    # El cliente de Kafka imprime su configuración completa al conectarse: con WARN queda lo útil.
+    org.apache.kafka: WARN
+    # Sin un broker, el cliente repite la advertencia de conexión cada segundo.
+    org.apache.kafka.clients.NetworkClient: ERROR
+  pattern:
+    level: "%5p [%X{idPeticion:-sin-id}]"

@@ -13,3 +13,9 @@ CREATE SCHEMA IF NOT EXISTS contacto;
 
 -- Schema de ms-notificaciones (EP2): avisos, auditoría de eventos y eventos procesados.
 CREATE SCHEMA IF NOT EXISTS notificaciones;
+
+-- Schema de ms-analitica (v3): las vistas que arman los consumidores de Kafka.
+CREATE SCHEMA IF NOT EXISTS analitica;
+
+-- Schema de ms-prompts (v3): la biblioteca de prompts.
+CREATE SCHEMA IF NOT EXISTS prompts;

@@ -167,6 +167,8 @@ logging:
   level:
     # Se sube a DEBUG en la nube con la variable LOG_NIVEL, sin reconstruir la imagen.
     cl.duoc.duocconecta: ${LOG_NIVEL:INFO}
+    # El cliente de Kafka imprime su configuración completa al conectarse: con WARN queda lo útil.
+    org.apache.kafka: WARN
   pattern:
     # El identificador de correlación va en cada línea: es lo que permite seguir una misma
     # petición entre el BFF y los microservicios en un solo grupo de CloudWatch.

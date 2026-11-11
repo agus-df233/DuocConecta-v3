@@ -1,0 +1,40 @@
+# Configuración de los tests de ms-analitica: H2 en memoria y un Kafka embebido (@EmbeddedKafka).
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:analitica_test;INIT=CREATE SCHEMA IF NOT EXISTS analitica;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        default_schema: analitica
+  flyway:
+    enabled: false
+  kafka:
+    listener:
+      # Un hilo basta: el broker embebido es uno solo.
+      concurrency: 1
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ""
+          jwk-set-uri: http://localhost:0/.well-known/jwks.json
+
+duocconecta:
+  analitica:
+    # Umbral bajo para probar la alerta con pocos registros.
+    alertas:
+      COMENTARIO:
+        umbral: 3
+        ventana-minutos: 5
+  seguridad:
+    audiencia: audiencia-de-prueba
+    dominios:
+      duocuc.cl: ESTUDIANTE
+      profesor.duoc.cl: PROFESOR
+      duoc.cl: ACADEMICO
