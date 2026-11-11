@@ -1,0 +1,132 @@
+# Configuración de ms-mensajeria (EP2), el administrador de colas, tópicos y suscripciones.
+# No tiene base de datos: su estado es AWS. Ningún valor sensible está escrito aquí.
+
+server:
+  port: 8085
+
+spring:
+  # RabbitMQ (EP2), el segundo broker: un nodo. Credenciales por variable de entorno.
+  rabbitmq:
+    addresses: ${RABBITMQ_ADDRESSES:localhost:5672}
+    username: ${RABBITMQ_USUARIO:duocconecta}
+    password: ${RABBITMQ_CLAVE:duocconecta}
+    # Corto a propósito: se publica después del commit en el mismo hilo de la petición. Con el
+    # valor por defecto (60 s por dirección), un RabbitMQ caído dejaba colgada cada escritura.
+    connection-timeout: 2s
+    # El broker confirma cada publicación (publisher confirm); un rechazo queda en el log.
+    publisher-confirm-type: correlated
+    listener:
+      simple:
+        # Pocos mensajes a la vez: la tarea comparte CPU con otras JVM.
+        prefetch: 5
+        auto-startup: ${CONSUMIDORES_ACTIVOS:true}
+
+  application:
+    name: ms-mensajeria
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
+
+duocconecta:
+  # La topología base. Aquí sirve para PROTEGERLA: estos recursos no se eliminan desde la API.
+  # Mismos nombres que en ms-notificaciones, que es quien los crea y consume.
+  mensajeria:
+    # RabbitMQ: los mismos eventos que SNS. Topic exchange (routing key = tipo) y un DLX direct.
+    rabbit:
+      habilitada: ${RABBITMQ_HABILITADA:true}
+      exchange: ${RABBITMQ_EXCHANGE:duocconecta.eventos}
+      dlx: ${RABBITMQ_DLX:duocconecta.dlx}
+      max-entregas: 3                          # a la tercera, la cola quorum lo manda al DLX
+      colas:
+        proyectos: duocconecta.notificaciones.proyectos
+        colaboraciones: duocconecta.notificaciones.colaboraciones
+        auditoria: duocconecta.auditoria
+      descartes:
+        proyectos: duocconecta.notificaciones.proyectos.descartes
+        colaboraciones: duocconecta.notificaciones.colaboraciones.descartes
+        auditoria: duocconecta.auditoria.descartes
+      bindings:                                # qué tipos recibe cada cola
+        proyectos: "proyecto.#"
+        colaboraciones: "colaboracion.#"
+        auditoria: "#"
+    region: ${AWS_REGION:us-east-1}
+    origen: ${spring.application.name}
+    topico:
+      nombre: ${SNS_TOPICO_EVENTOS:duocconecta-eventos}
+    colas:
+      proyectos: ${SQS_COLA_PROYECTOS:duocconecta-notificaciones-proyectos}
+      colaboraciones: ${SQS_COLA_COLABORACIONES:duocconecta-notificaciones-colaboraciones}
+      auditoria: ${SQS_COLA_AUDITORIA:duocconecta-auditoria-eventos}
+    descartes:
+      proyectos: ${SQS_COLA_PROYECTOS:duocconecta-notificaciones-proyectos}-descartes
+      colaboraciones: ${SQS_COLA_COLABORACIONES:duocconecta-notificaciones-colaboraciones}-descartes
+      auditoria: ${SQS_COLA_AUDITORIA:duocconecta-auditoria-eventos}-descartes
+    no-entregados: ${SQS_COLA_NO_ENTREGADOS:duocconecta-eventos-no-entregados}
+    # Valores por defecto de las colas nuevas: los mismos de la topología base.
+    parametros:
+      retencion-trabajo-segundos: 345600
+      retencion-descartes-segundos: 1209600
+      visibilidad-segundos: 30
+      espera-segundos: 20
+      max-recepciones: 3
+
+  seguridad:
+    audiencia: ${AZURE_CLIENT_ID}
+    claims-correo:
+      - email
+      - preferred_username
+      - upn
+      - unique_name
+    claims-nombre:
+      - name
+      - given_name
+      - preferred_username
+
+    # Grupos o roles que vienen en el token: App Roles de Entra ID ('roles') y grupos del user pool
+    # de Cognito ('cognito:groups'). Se suman al rol del dominio, nunca lo reemplazan.
+    claims-roles:
+      - roles
+      - cognito:groups
+
+    # Login con Google: Cognito emite un ID token con su propio emisor y audiencia. Una entrada con
+    # issuer-uri vacío se ignora, así en local sin Cognito todo funciona solo con Microsoft.
+    emisores-adicionales:
+      - issuer-uri: ${COGNITO_ISSUER_URI:}
+        audiencia: ${COGNITO_AUDIENCIA:}
+        # Entra ID no emite email_verified; Cognito sí, y sin verificar no se da rol.
+        exigir-correo-verificado: true
+    # Rol ADMINISTRADOR por lista (además del App Role o del grupo ADMINISTRADOR). El valor real va en .env o en la task definition.
+    administradores: ${ADMINISTRADORES:}
+    # Cuentas externas (Google) con su rol: correo=ROL separados por coma. Fuera de la lista, 403.
+    correos-permitidos: ${CORREOS_PERMITIDOS:}
+    dominios:
+      duocuc.cl: ESTUDIANTE
+      profesor.duoc.cl: PROFESOR
+      duoc.cl: ACADEMICO
+
+management:
+  # Si RabbitMQ se cae, el servicio sigue sano: el otro broker y el resto de la API funcionan.
+  health:
+    rabbit:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+logging:
+  level:
+    cl.duoc.duocconecta: ${LOG_NIVEL:INFO}
+  pattern:
+    level: "%5p [%X{idPeticion:-sin-id}]"
