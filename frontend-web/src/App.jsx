@@ -5,6 +5,7 @@ import { cuentaActual, iniciarSesion, cerrarSesion, claimsDelToken, alCambiarSes
 import Accesibilidad from './Accesibilidad'
 import AceptarSolicitud from './AceptarSolicitud'
 import Administracion from './Administracion'
+import BarraInferior from './BarraInferior'
 import Biblioteca from './Biblioteca'
 import Aviso, { useAviso } from './Aviso'
 import { AvisosEmergentes, CentroNotificaciones, DURACIONES_PUSH, useNotificaciones } from './CentroNotificaciones'
@@ -150,6 +151,7 @@ export default function App() {
         )}
         </div>
       </main>
+      <BarraInferior vista={vista} irA={irA} esAdministrador={esAdministrador} />
     </div>
   )
 }

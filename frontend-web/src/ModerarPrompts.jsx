@@ -10,6 +10,7 @@ import { Barras, Cifra } from './Cifras'
 import Confirmar from './Confirmar'
 import Ventana from './Ventana'
 import { EsqueletoLista } from './Esqueleto'
+import TablaAdmin from './TablaAdmin'
 
 export default function ModerarPrompts() {
   const [filtro, setFiltro] = useState('')
@@ -66,7 +67,7 @@ export default function ModerarPrompts() {
         <div className="vacio">No hay prompts con ese filtro.</div>
       ) : (
         <div className="tabla-scroll">
-          <table className="tabla-admin">
+          <TablaAdmin>
             <thead><tr><th>Prompt</th><th>Categoría</th><th>Visibilidad</th><th>Valoración</th><th>Publicado</th><th /></tr></thead>
             <tbody>
               {prompts.map((p) => (
@@ -88,7 +89,7 @@ export default function ModerarPrompts() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TablaAdmin>
         </div>
       )}
 

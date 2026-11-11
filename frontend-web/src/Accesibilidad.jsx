@@ -9,8 +9,12 @@ const TAMANOS = ['Normal', 'Grande', 'Muy grande']
 export default function Accesibilidad({ preferencias, alCambiar, abierto, alAlternar }) {
   return (
     <div className="desplegable">
-      <button type="button" className="boton-barra" onClick={alAlternar} aria-expanded={abierto} aria-haspopup="dialog">
-        Accesibilidad
+      <button type="button" className="boton-barra boton-accesibilidad" onClick={alAlternar} aria-expanded={abierto}
+              aria-haspopup="dialog" aria-label="Accesibilidad">
+        {/* En el celular solo queda el ícono, para que la cabecera quepa en una fila. */}
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor"
+             strokeWidth="1.9" strokeLinecap="round"><circle cx="12" cy="4.5" r="1.8" /><path d="M5 8.5l7 1.5 7-1.5M12 10v5l-3 6M12 15l3 6" /></svg>
+        <span className="texto-boton">Accesibilidad</span>
       </button>
       {abierto && (
         <div className="panel-flotante accesibilidad" role="dialog" aria-label="Opciones de accesibilidad">

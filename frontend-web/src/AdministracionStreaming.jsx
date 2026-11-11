@@ -10,6 +10,7 @@ import Aviso, { useAviso } from './Aviso'
 import { duracion, fechaLarga, TIPOS_ACTIVIDAD } from './catalogo'
 import { Barras, Cifra } from './Cifras'
 import { EsqueletoLista } from './Esqueleto'
+import TablaAdmin from './TablaAdmin'
 
 const ALERTAS_CADA = 20_000
 const STREAMING_CADA = 5_000
@@ -68,7 +69,7 @@ export function Alertas() {
       )}
       {alertas?.length > 0 && (
         <div className="tabla-scroll">
-          <table className="tabla-admin">
+          <TablaAdmin>
             <thead>
               <tr><th>Persona</th><th>Qué repitió</th><th>Cuánto</th><th>Última vez</th><th>Estado</th><th /></tr>
             </thead>
@@ -93,7 +94,7 @@ export function Alertas() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TablaAdmin>
         </div>
       )}
       <Aviso texto={mensaje} />
@@ -207,7 +208,7 @@ export function Streaming() {
 
       <h2 className="subtitulo-admin">Grupos de consumidores</h2>
       <div className="tabla-scroll">
-        <table className="tabla-admin">
+        <TablaAdmin>
           <thead><tr><th>Grupo</th><th>Estado</th><th>Lag</th></tr></thead>
           <tbody>
             {grupos.map((g) => (
@@ -218,12 +219,12 @@ export function Streaming() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </TablaAdmin>
       </div>
 
       <h2 className="subtitulo-admin">Tópicos</h2>
       <div className="tabla-scroll">
-        <table className="tabla-admin">
+        <TablaAdmin>
           <thead><tr><th>Tópico</th><th>Réplicas</th><th>Retención</th><th>Limpieza</th><th>Registros</th></tr></thead>
           <tbody>
             {topicos.map((t) => (
@@ -236,7 +237,7 @@ export function Streaming() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </TablaAdmin>
       </div>
 
       <h2 className="subtitulo-admin">Brokers</h2>

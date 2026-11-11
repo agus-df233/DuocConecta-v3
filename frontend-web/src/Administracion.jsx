@@ -23,6 +23,7 @@ import Confirmar from './Confirmar'
 import FormularioProyecto from './FormularioProyecto'
 import Ventana from './Ventana'
 import { EsqueletoLista } from './Esqueleto'
+import TablaAdmin from './TablaAdmin'
 
 const PESTANAS = [
   { id: 'resumen', texto: 'Resumen' },
@@ -185,7 +186,7 @@ function ModerarProyectos() {
 
       {proyectos && (
         <div className="tarjeta tabla-scroll">
-          <table className="tabla-admin">
+          <TablaAdmin>
             <thead>
               <tr><th>Proyecto</th><th>Estado</th><th>Visibilidad</th><th>Publicado</th><th>Moderación</th><th /></tr>
             </thead>
@@ -214,7 +215,7 @@ function ModerarProyectos() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TablaAdmin>
           {proyectos.length === 0 && <p className="ayuda">No hay proyectos con estos filtros.</p>}
         </div>
       )}
