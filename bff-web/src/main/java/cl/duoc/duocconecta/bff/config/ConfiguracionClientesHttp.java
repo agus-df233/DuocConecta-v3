@@ -45,6 +45,12 @@ public class ConfiguracionClientesHttp {
         return construir(propiedades.getUrlMsAnalitica(), propiedades.getTimeoutSegundos());
     }
 
+    /** Cliente de ms-prompts (v3): la biblioteca de prompts. */
+    @Bean
+    public RestClient clienteMsPrompts(PropiedadesBff propiedades) {
+        return construir(propiedades.getUrlMsPrompts(), propiedades.getTimeoutSegundos());
+    }
+
     /** Timeout de conexión y de lectura. Usa el cliente del JDK para no sumar una librería. */
     private RestClient construir(String urlBase, int segundos) {
         Duration timeout = Duration.ofSeconds(segundos);

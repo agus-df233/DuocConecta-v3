@@ -154,3 +154,26 @@ export function duracion(ms) {
   if (n % hora === 0) return `${n / hora} h`
   return `${Math.round(n / 60_000)} min`
 }
+
+// --- Biblioteca de prompts (v3) -----------------------------------------------
+
+/** Para qué tipo de tarea sirve un prompt. Transversal a las carreras, que van aparte. */
+export const CATEGORIAS_PROMPT = {
+  CODIGO: 'Código',
+  REDACCION: 'Redacción',
+  ANALISIS_DATOS: 'Análisis de datos',
+  DISENO: 'Diseño',
+  ESTUDIO: 'Estudio',
+  INVESTIGACION: 'Investigación',
+  OTRO: 'Otro',
+}
+
+/** Sugerencias para el campo de herramienta, que es libre: ninguna lista cerrada queda al día. */
+export const HERRAMIENTAS_IA = ['ChatGPT', 'Claude', 'Gemini', 'Copilot', 'Perplexity', 'NotebookLM', 'Midjourney']
+
+/** Cómo se ordena la biblioteca. "En tendencia" sale de la analítica (Kafka). */
+export const ORDENES_PROMPT = {
+  RECIENTES: 'Más recientes',
+  MEJOR_VALORADOS: 'Mejor valorados',
+  TENDENCIA: 'En tendencia',
+}

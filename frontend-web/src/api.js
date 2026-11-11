@@ -260,3 +260,63 @@ export const gruposKafka = () => pedir('/api/v1/mensajeria/kafka/grupos')
 
 /** Un grupo: quién atiende cada partición, offsets y lag. */
 export const grupoKafka = (id) => pedir(`/api/v1/mensajeria/kafka/grupos/${encodeURIComponent(id)}`)
+
+// --- Biblioteca de prompts (v3) ------------------------------------------------
+//
+// Buscar y ver el detalle van por el BFF, que suma el nombre de cada autor. Publicar, editar,
+// bifurcar y valorar van directo a ms-prompts: ahí no hay nada que componer.
+
+/** Busca en la biblioteca. Los filtros vacíos no se envían. */
+export const listarPrompts = (filtros = {}) => {
+  const parametros = new URLSearchParams(Object.entries(filtros).filter(([, v]) => v))
+  return pedir(`/api/v1/bff/biblioteca${parametros.size ? `?${parametros}` : ''}`)
+}
+
+/** El detalle de un prompt, con su autor y, si es una copia, el del original. */
+export const obtenerPrompt = (id) => pedir(`/api/v1/bff/biblioteca/${id}`)
+
+/** Los prompts propios, también los privados. */
+export const misPrompts = () => pedir('/api/v1/prompts/mios')
+
+/** Publica un prompt. */
+export const publicarPrompt = (prompt) =>
+  pedir('/api/v1/prompts', { method: 'POST', body: JSON.stringify(prompt) })
+
+/** Edita un prompt propio. */
+export const editarPrompt = (id, prompt) =>
+  pedir(`/api/v1/prompts/${id}`, { method: 'PUT', body: JSON.stringify(prompt) })
+
+/** Borra un prompt propio. Las copias que hicieron otras personas siguen. */
+export const eliminarPrompt = (id) => pedir(`/api/v1/prompts/${id}`, { method: 'DELETE' })
+
+/** Hace una copia propia y privada del prompt, que recuerda de dónde salió. */
+export const bifurcarPrompt = (id) => pedir(`/api/v1/prompts/${id}/bifurcaciones`, { method: 'POST' })
+
+/** Valora con 1 a 5 estrellas. Valorar de nuevo reemplaza. */
+export const valorarPrompt = (id, estrellas) =>
+  pedir(`/api/v1/prompts/${id}/valoracion`, { method: 'PUT', body: JSON.stringify({ estrellas }) })
+
+/** Se abrió el detalle: señal para la tendencia (solo Kafka). */
+export const registrarVistaPrompt = (id) => pedir(`/api/v1/prompts/${id}/vistas`, { method: 'POST' })
+
+/** Se copió el texto: la señal de uso más fuerte (solo Kafka). */
+export const registrarCopiaPrompt = (id) => pedir(`/api/v1/prompts/${id}/copias`, { method: 'POST' })
+
+// Moderación de la biblioteca (solo ADMINISTRADOR).
+
+/** Todos los prompts; `oculto` vacío, 'true' o 'false'. */
+export const promptsParaModerar = (oculto = '') =>
+  pedir(`/api/v1/prompts/admin${oculto ? `?oculto=${oculto}` : ''}`)
+
+/** Saca un prompt de la biblioteca con un motivo. */
+export const ocultarPrompt = (id, motivo) =>
+  pedir(`/api/v1/prompts/admin/${id}/ocultar`, { method: 'PATCH', body: JSON.stringify({ motivo }) })
+
+/** Lo devuelve a la biblioteca. */
+export const mostrarPrompt = (id) => pedir(`/api/v1/prompts/admin/${id}/mostrar`, { method: 'PATCH' })
+
+/** Lo borra. */
+export const eliminarPromptModerado = (id) => pedir(`/api/v1/prompts/admin/${id}`, { method: 'DELETE' })
+
+/** Cifras de la biblioteca. */
+export const estadisticasPrompts = () => pedir('/api/v1/prompts/admin/estadisticas')

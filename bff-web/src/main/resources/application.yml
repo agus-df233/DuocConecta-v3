@@ -62,6 +62,7 @@ duocconecta:
     url-ms-contacto: ${MS_CONTACTO_URL:http://localhost:8083}
     # ms-analitica (v3) va en otro servicio de ECS: en la nube es el DNS del ALB, no localhost.
     url-ms-analitica: ${MS_ANALITICA_URL:http://localhost:8086}
+    url-ms-prompts: ${MS_PROMPTS_URL:http://localhost:8087}
     # Si un microservicio no responde en este tiempo, se corta y se devuelve 503
     # en vez de dejar al frontend esperando.
     timeout-segundos: 5

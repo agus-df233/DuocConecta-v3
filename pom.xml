@@ -37,6 +37,7 @@
         <module>ms-notificaciones</module>
         <module>ms-mensajeria</module>
         <module>ms-analitica</module>
+        <module>ms-prompts</module>
         <module>bff-web</module>
     </modules>
 

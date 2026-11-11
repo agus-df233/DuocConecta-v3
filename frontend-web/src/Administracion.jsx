@@ -16,6 +16,7 @@ import {
 } from './api'
 import { Actividad, Alertas, Streaming } from './AdministracionStreaming'
 import { Barras, Cifra } from './Cifras'
+import ModerarPrompts from './ModerarPrompts'
 import Aviso, { useAviso } from './Aviso'
 import { ESTADOS, fechaCorta, fechaLarga } from './catalogo'
 import Confirmar from './Confirmar'
@@ -26,6 +27,7 @@ const PESTANAS = [
   { id: 'resumen', texto: 'Resumen' },
   { id: 'proyectos', texto: 'Proyectos' },
   { id: 'comentarios', texto: 'Comentarios' },
+  { id: 'prompts', texto: 'Prompts' },
   { id: 'alertas', texto: 'Alertas' },
   { id: 'actividad', texto: 'Actividad' },
   { id: 'streaming', texto: 'Streaming' },
@@ -57,6 +59,7 @@ export default function Administracion() {
       {pestana === 'resumen' && <Resumen />}
       {pestana === 'proyectos' && <ModerarProyectos />}
       {pestana === 'comentarios' && <ModerarComentarios />}
+      {pestana === 'prompts' && <ModerarPrompts />}
       {pestana === 'alertas' && <Alertas />}
       {pestana === 'actividad' && <Actividad />}
       {pestana === 'streaming' && <Streaming />}

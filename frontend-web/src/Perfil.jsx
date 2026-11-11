@@ -6,6 +6,7 @@ import {
   listarProyectos, editarProyecto, retirarColaboracion,
 } from './api'
 import { claimsDelToken } from './auth'
+import { misPrompts } from './api'
 import Aviso, { useAviso } from './Aviso'
 import Confirmar from './Confirmar'
 import { avisarCambio } from './eventos'
@@ -13,7 +14,7 @@ import FormularioProyecto from './FormularioProyecto'
 import AceptarSolicitud from './AceptarSolicitud'
 import Interruptor from './Interruptor'
 import { MisColaboraciones, MisSolicitudes, responder, useColaboraciones } from './Solicitudes'
-import { ESCUELAS, ESTADOS, SEDES, SIN_CARRERA, iniciales } from './catalogo'
+import { CATEGORIAS_PROMPT, ESCUELAS, ESTADOS, SEDES, SIN_CARRERA, iniciales } from './catalogo'
 
 // Qué sección del perfil corresponde a cada destino de un aviso.
 const SECCIONES = {
@@ -24,7 +25,7 @@ const SECCIONES = {
   'mis-proyectos': 'seccion-proyectos',
 }
 
-export default function Perfil({ foco, alUsarFoco, preferencias, cambiarPreferencias }) {
+export default function Perfil({ foco, alUsarFoco, preferencias, cambiarPreferencias, alAbrirPrompt }) {
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState(null)
   const { texto: aviso, avisar } = useAviso()
@@ -121,6 +122,8 @@ export default function Perfil({ foco, alUsarFoco, preferencias, cambiarPreferen
         <PreferenciasDeAviso preferencias={preferencias} alCambiar={cambiarPreferencias} />
 
         <MisProyectos alAvisar={avisar} alFallar={setError} />
+
+        <MisPrompts alAbrir={alAbrirPrompt} />
       </div>
 
       {aceptando && (
@@ -407,6 +410,50 @@ function MisProyectos({ alAvisar, alFallar }) {
           alGuardar={guardar}
           alCerrar={() => setEditando(null)}
         />
+      )}
+    </section>
+  )
+}
+
+/** Los prompts propios, con su estado. Se editan desde la biblioteca, donde está el formulario. */
+function MisPrompts({ alAbrir }) {
+  const [prompts, setPrompts] = useState(null)
+
+  useEffect(() => {
+    misPrompts().then(setPrompts).catch(() => setPrompts([]))
+  }, [])
+
+  return (
+    <section className="tarjeta ancho-completo" id="seccion-prompts" tabIndex={-1} aria-labelledby="titulo-prompts">
+      <h2 id="titulo-prompts">Mis prompts</h2>
+      <p className="ayuda">Los borradores y las copias que hiciste solo los ves tú hasta que los publiques.</p>
+      {prompts === null ? (
+        <p className="ayuda">Cargando…</p>
+      ) : prompts.length === 0 ? (
+        <p className="ayuda">Aún no publicas prompts. Se publican desde la biblioteca.</p>
+      ) : (
+        <div className="grilla">
+          {prompts.map((p) => (
+            <div key={p.id} className={p.visibilidad === 'PUBLICO' && !p.oculto ? 'tarjeta mio' : 'tarjeta mio apagado'}>
+              <div className="etiquetas">
+                <span className="insignia categoria">{CATEGORIAS_PROMPT[p.categoria] ?? p.categoria}</span>
+                {p.oculto ? (
+                  <span className="pildora moderado">Oculto por moderación</span>
+                ) : (
+                  <span className={p.visibilidad === 'PUBLICO' ? 'pildora visible' : 'pildora'}>
+                    {p.visibilidad === 'PUBLICO' ? 'Visible' : 'Borrador'}
+                  </span>
+                )}
+              </div>
+              <h3>{p.titulo}</h3>
+              <p className="ayuda">{p.proposito}</p>
+              {p.oculto && p.motivoOcultamiento && <p className="motivo-moderacion">Motivo: {p.motivoOcultamiento}</p>}
+              <div className="acciones">
+                <button type="button" className="secundario" onClick={() => alAbrir(p.id)}>Ver en la biblioteca</button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </section>
   )

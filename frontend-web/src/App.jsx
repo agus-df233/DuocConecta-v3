@@ -5,13 +5,14 @@ import { cuentaActual, iniciarSesion, cerrarSesion, claimsDelToken, alCambiarSes
 import Accesibilidad from './Accesibilidad'
 import AceptarSolicitud from './AceptarSolicitud'
 import Administracion from './Administracion'
+import Biblioteca from './Biblioteca'
 import Aviso, { useAviso } from './Aviso'
 import { AvisosEmergentes, CentroNotificaciones, DURACIONES_PUSH, useNotificaciones } from './CentroNotificaciones'
 import { obtenerMiPerfil, responderColaboracion } from './api'
 import { avisarCambio } from './eventos'
 import insigniaDuoc from './assets/duoc-uc.jpg'
 import { iniciales, tipoDeAviso } from './catalogo'
-import { CLAVE_DESTINO, PREFIJO_ENLACE } from './enlaces'
+import { CLAVE_DESTINO, PREFIJO_ENLACE, PREFIJO_PROMPT } from './enlaces'
 import Perfil from './Perfil'
 import { usePreferencias } from './preferencias'
 import Vitrina from './Vitrina'
@@ -26,7 +27,9 @@ function destinoInicial() {
     guardado = window.sessionStorage.getItem(CLAVE_DESTINO)
     window.sessionStorage.removeItem(CLAVE_DESTINO)
   } catch { /* sin almacenamiento no hay destino guardado */ }
-  const enlace = window.location.hash.startsWith(PREFIJO_ENLACE) ? window.location.hash : guardado
+  const hash = window.location.hash
+  const enlace = hash.startsWith(PREFIJO_ENLACE) || hash.startsWith(PREFIJO_PROMPT) ? hash : guardado
+  if (enlace?.startsWith(PREFIJO_PROMPT)) return { promptId: enlace.slice(PREFIJO_PROMPT.length) }
   return enlace?.startsWith(PREFIJO_ENLACE) ? { proyectoId: enlace.slice(PREFIJO_ENLACE.length) } : null
 }
 
@@ -38,8 +41,11 @@ export default function App() {
   const [esAdministrador, setEsAdministrador] = useState(false)
 
   // Dónde está la persona, y qué hay que abrir al llegar: un proyecto o una sección del perfil.
-  const [vista, setVista] = useState('vitrina')
-  const [foco, setFoco] = useState(destinoInicial)
+  // destinoInicial() consume el destino guardado: se lee una sola vez. Un enlace a un prompt abre
+  // la biblioteca; cualquier otro, la vitrina.
+  const [inicio] = useState(destinoInicial)
+  const [vista, setVista] = useState(inicio?.promptId ? 'biblioteca' : 'vitrina')
+  const [foco, setFoco] = useState(inicio)
 
   // MSAL avisa ACQUIRE_TOKEN_SUCCESS en cada token pedido, incluso de caché, y cada aviso trae un
   // objeto de cuenta nuevo. Si se guardara tal cual, todo efecto que dependa de la cuenta volvería
@@ -106,10 +112,12 @@ export default function App() {
             alEsconder={(escondidos) => cambiarPreferencias({ escondidos })}
           />
         )}
+        {vista === 'biblioteca' && <Biblioteca foco={foco} alUsarFoco={usarFoco} />}
         {vista === 'perfil' && (
           <Perfil
             foco={foco}
             alUsarFoco={usarFoco}
+            alAbrirPrompt={(promptId) => irA('biblioteca', { promptId })}
             preferencias={preferencias}
             cambiarPreferencias={cambiarPreferencias}
           />
@@ -202,13 +210,9 @@ function Cabecera({ vista, irA, irAlAviso, correo, esAdministrador, preferencias
 
         <nav aria-label="Principal">
           {botonVista('vitrina', 'Vitrina')}
+          {botonVista('biblioteca', 'Prompts')}
           {botonVista('perfil', 'Perfil')}
           {esAdministrador && botonVista('admin', 'Administración')}
-          {/* La biblioteca de prompts es la siguiente entrega. Se deja a la vista, apagada,
-              para que se entienda que está planificada y no olvidada. */}
-          <span className="pronto" title="Biblioteca de prompts: llega en la próxima entrega">
-            Prompts<span>Pronto</span>
-          </span>
         </nav>
 
         {/* Los controles de cuenta van juntos: si la cabecera envuelve, se mueven como una sola
@@ -293,7 +297,7 @@ function Login() {
     }
     // El # de un enlace compartido no sobrevive al viaje al proveedor: se guarda para la vuelta.
     try {
-      if (window.location.hash.startsWith(PREFIJO_ENLACE)) {
+      if (window.location.hash.startsWith(PREFIJO_ENLACE) || window.location.hash.startsWith(PREFIJO_PROMPT)) {
         window.sessionStorage.setItem(CLAVE_DESTINO, window.location.hash)
       }
     } catch { /* sin almacenamiento se pierde el destino, no el login */ }

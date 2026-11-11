@@ -1,0 +1,64 @@
+# Configuración exclusiva de los tests de ms-prompts.
+# El objetivo es que el contexto levante sin depender de Docker ni de internet.
+
+spring:
+  datasource:
+    # Base en memoria. El INIT crea el schema `prompts` porque H2 no lo trae de fábrica
+    # y las entidades lo esperan.
+    url: jdbc:h2:mem:prompts_test;INIT=CREATE SCHEMA IF NOT EXISTS prompts;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+
+  jpa:
+    hibernate:
+      # En los tests el esquema lo crea Hibernate a partir de las entidades:
+      # las migraciones de Flyway están escritas para PostgreSQL.
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        default_schema: prompts
+
+  flyway:
+    # Se apaga porque V1__prompts.sql usa sintaxis de PostgreSQL.
+    enabled: false
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Se deja en blanco a propósito para tapar el valor de application.yml, que
+          # contiene el placeholder ${OIDC_ISSUER_URI} y no se puede resolver aquí.
+          issuer-uri: ""
+          # Se usa jwk-set-uri y NO issuer-uri a propósito: issuer-uri hace descubrimiento
+          # OIDC contra la red al arrancar el contexto, y el test fallaría sin internet.
+          # Con jwk-set-uri las claves se piden recién al validar un token, cosa que estos
+          # tests no hacen.
+          jwk-set-uri: http://localhost:0/.well-known/jwks.json
+
+duocconecta:
+  # Los tests no publican en Kafka: no hay brokers.
+  kafka:
+    habilitada: false
+  # Los tests no publican en SNS: los eventos solo se registran.
+  mensajeria:
+    habilitada: false
+    origen: ms-prompts
+  seguridad:
+    audiencia: audiencia-de-prueba
+    dominios:
+      duocuc.cl: ESTUDIANTE
+      profesor.duoc.cl: PROFESOR
+      duoc.cl: ACADEMICO
+
+# RabbitMQ apagado en los tests: no hace falta un broker para que el contexto levante.
+---
+spring:
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false
+duocconecta:
+  mensajeria:
+    rabbit:
+      habilitada: false

@@ -25,6 +25,9 @@ public class PropiedadesBff {
      */
     private String urlMsAnalitica = "http://localhost:8086";
 
+    /** ms-prompts (v3): la biblioteca. Como ms-analitica, en la nube va detrás del ALB. */
+    private String urlMsPrompts = "http://localhost:8087";
+
     private int timeoutSegundos = 5;
 
     /** Configuración de CORS para el frontend. */
@@ -52,6 +55,14 @@ public class PropiedadesBff {
 
     public void setUrlMsAnalitica(String urlMsAnalitica) {
         this.urlMsAnalitica = urlMsAnalitica;
+    }
+
+    public String getUrlMsPrompts() {
+        return urlMsPrompts;
+    }
+
+    public void setUrlMsPrompts(String urlMsPrompts) {
+        this.urlMsPrompts = urlMsPrompts;
     }
 
     public String getUrlMsContacto() {
