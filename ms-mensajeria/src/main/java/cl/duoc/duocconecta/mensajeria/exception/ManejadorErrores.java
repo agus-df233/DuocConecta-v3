@@ -61,6 +61,13 @@ public class ManejadorErrores extends ManejadorErroresBase {
         return problema(HttpStatus.BAD_GATEWAY, "RabbitMQ rechazó la operación", excepcion.getMessage());
     }
 
+    /** Kafka no respondió a tiempo: los brokers están caídos o no se alcanzan. */
+    @ExceptionHandler(KafkaNoDisponibleException.class)
+    public ProblemDetail manejarSinKafka(KafkaNoDisponibleException excepcion) {
+        log.warn("Kafka no disponible: {}", excepcion.getMessage());
+        return problema(HttpStatus.SERVICE_UNAVAILABLE, "Kafka no disponible", excepcion.getMessage());
+    }
+
     /** Sin red o sin credenciales: en el Learner Lab vencen en cada sesión. */
     @ExceptionHandler(SdkClientException.class)
     public ProblemDetail manejarSinAws(SdkClientException excepcion) {

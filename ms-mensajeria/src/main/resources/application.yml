@@ -24,6 +24,16 @@ spring:
   application:
     name: ms-mensajeria
 
+  # Kafka (v3): solo administra (AdminClient). Al arrancar crea los tópicos base que falten.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092,localhost:9093,localhost:9094}
+    client-id: ${spring.application.name}
+    admin:
+      # Si Kafka no está al arrancar, el servicio levanta igual: la API responde 503 hasta que vuelva.
+      fail-fast: false
+      # Nunca pisa la configuración de un tópico que ya existe: eso se cambia con la API, a propósito.
+      modify-topic-configs: false
+
   security:
     oauth2:
       resourceserver:
@@ -31,6 +41,23 @@ spring:
           issuer-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
 
 duocconecta:
+  # Kafka (v3). Los mismos valores que docker/kafka/topicos.sh: si cambias uno, cambia el otro.
+  kafka:
+    habilitada: ${KAFKA_HABILITADA:true}
+    particiones: 3                     # una por broker; hasta 3 consumidores en paralelo por grupo
+    replicas: 3                        # una copia en cada broker
+    min-replicas-sincronizadas: 2      # con acks=all, se tolera perder un broker sin perder datos
+    sufijo-dlt: .dlt
+    retencion-dlt-ms: 1209600000       # 14 días, como las DLQ de SQS
+    topicos:
+      interacciones:
+        nombre: duocconecta.contenido.interacciones
+        retencion-ms: 604800000        # 7 días: la ventana de tendencia; permite releer
+        segmento-ms: 86400000          # 1 día
+      actividad:
+        nombre: duocconecta.usuarios.actividad
+        retencion-ms: 86400000         # 24 h: lleva identificadores de persona
+        segmento-ms: 3600000           # 1 h, para que las 24 h se cumplan
   # La topología base. Aquí sirve para PROTEGERLA: estos recursos no se eliminan desde la API.
   # Mismos nombres que en ms-notificaciones, que es quien los crea y consume.
   mensajeria:

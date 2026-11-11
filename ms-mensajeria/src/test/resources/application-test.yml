@@ -9,6 +9,9 @@ spring:
           jwk-set-uri: http://localhost:0/.well-known/jwks.json
 
 duocconecta:
+  # Kafka apagado salvo en AdministracionKafkaTests, que levanta un clúster embebido.
+  kafka:
+    habilitada: false
   seguridad:
     audiencia: audiencia-de-prueba
     dominios:
