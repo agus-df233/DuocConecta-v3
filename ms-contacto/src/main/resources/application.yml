@@ -6,6 +6,10 @@ server:
   port: 8083
 
 spring:
+  # Kafka (v3): el cliente del productor es el mismo en todos los servicios que publican, y vive
+  # en common-eventos (duocconecta-kafka.yml): brokers, serializadores, acks e idempotencia.
+  config:
+    import: classpath:duocconecta-kafka.yml
   # RabbitMQ (EP2), el segundo broker: un nodo. Credenciales por variable de entorno.
   rabbitmq:
     addresses: ${RABBITMQ_ADDRESSES:localhost:5672}

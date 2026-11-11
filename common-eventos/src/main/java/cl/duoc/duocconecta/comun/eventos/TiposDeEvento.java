@@ -24,12 +24,24 @@ public final class TiposDeEvento {
     public static final String COLABORACION_RECHAZADA = "colaboracion.rechazada";
     public static final String COLABORACION_RETIRADA = "colaboracion.retirada";
 
+    public static final String PROMPT_PUBLICADO = "prompt.publicado";
+    public static final String PROMPT_ACTUALIZADO = "prompt.actualizado";
+    public static final String PROMPT_ELIMINADO = "prompt.eliminado";
+    /** Alguien hizo su copia de un prompt. {@code recursoId} es el original; {@code detalle}, la copia. */
+    public static final String PROMPT_BIFURCADO = "prompt.bifurcado";
+    /** {@code detalle} lleva las estrellas. */
+    public static final String PROMPT_VALORADO = "prompt.valorado";
+    public static final String PROMPT_OCULTADO = "prompt.ocultado";
+    public static final String PROMPT_RESTAURADO = "prompt.restaurado";
+
     /** Todos los tipos conocidos: un consumidor descarta como no recuperable lo que no esté aquí. */
     public static final Set<String> CONOCIDOS = Set.of(
             PROYECTO_PUBLICADO, PROYECTO_ACTUALIZADO, PROYECTO_ELIMINADO, PROYECTO_COMENTADO,
             PROYECTO_COLABORADOR_AGREGADO, PROYECTO_OCULTADO, PROYECTO_RESTAURADO,
             PROYECTO_COMENTARIO_ELIMINADO,
-            COLABORACION_SOLICITADA, COLABORACION_ACEPTADA, COLABORACION_RECHAZADA, COLABORACION_RETIRADA);
+            COLABORACION_SOLICITADA, COLABORACION_ACEPTADA, COLABORACION_RECHAZADA, COLABORACION_RETIRADA,
+            PROMPT_PUBLICADO, PROMPT_ACTUALIZADO, PROMPT_ELIMINADO, PROMPT_BIFURCADO, PROMPT_VALORADO,
+            PROMPT_OCULTADO, PROMPT_RESTAURADO);
 
     private TiposDeEvento() {
     }

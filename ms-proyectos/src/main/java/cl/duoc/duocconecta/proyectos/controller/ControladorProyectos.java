@@ -115,6 +115,28 @@ public class ControladorProyectos {
     }
 
     /**
+     * Anota que la persona abrió el detalle del proyecto. Alimenta la tendencia de la vitrina
+     * (Kafka); no avisa a nadie ni cambia el proyecto.
+     *
+     * @return 204; 403 si no puede verlo
+     */
+    @Operation(
+            summary = "Registra una vista del proyecto",
+            description = "Lo llama el detalle al abrirse. Las vistas de la dueña no cuentan. Solo llega a Kafka.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Vista registrada"),
+            @ApiResponse(responseCode = "403", description = "Sin acceso a este proyecto", content = @Content),
+            @ApiResponse(responseCode = "404", description = "El proyecto no existe", content = @Content)
+    })
+    @PostMapping("/{id}/vistas")
+    @PreAuthorize(ROLES_DE_LA_PLATAFORMA)
+    public ResponseEntity<Void> registrarVista(
+            @Parameter(description = "Identificador del proyecto") @PathVariable UUID id) {
+        servicio.registrarVista(id, autor());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Edita un proyecto propio, incluida su visibilidad.
      *
      * <p>Cambiar la visibilidad a privado es la forma de ocultarlo de la vitrina sin borrarlo.</p>

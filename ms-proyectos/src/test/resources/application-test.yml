@@ -37,6 +37,9 @@ spring:
           jwk-set-uri: http://localhost:0/.well-known/jwks.json
 
 duocconecta:
+  # Los tests no publican en Kafka: no hay brokers.
+  kafka:
+    habilitada: false
   # Los tests no publican en SNS: los eventos solo se registran.
   mensajeria:
     habilitada: false

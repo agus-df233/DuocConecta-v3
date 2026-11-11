@@ -17,7 +17,7 @@
 
     <artifactId>common-eventos</artifactId>
     <name>common-eventos</name>
-    <description>Contrato de eventos, publicación en SNS y RabbitMQ, y topología de SQS de DuocConecta</description>
+    <description>Contrato de eventos, publicación en SNS, RabbitMQ y Kafka, y topología de SQS de DuocConecta</description>
 
     <dependencies>
         <dependency>
@@ -52,6 +52,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
+        <!-- Kafka (v3): streaming para la analítica. Complementa a los otros brokers, no los reemplaza. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-kafka</artifactId>
+        </dependency>
+
+        <!-- Las anotaciones de validación de los DTO de Kafka; el consumidor es quien valida. -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
         </dependency>
 
         <dependency>

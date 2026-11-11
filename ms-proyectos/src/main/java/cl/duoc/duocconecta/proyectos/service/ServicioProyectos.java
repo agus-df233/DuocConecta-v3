@@ -1,6 +1,8 @@
 package cl.duoc.duocconecta.proyectos.service;
 
 import cl.duoc.duocconecta.comun.eventos.EventoDuocConecta;
+import cl.duoc.duocconecta.comun.eventos.kafka.SenalDeUso;
+import cl.duoc.duocconecta.comun.eventos.kafka.TipoRecurso;
 import cl.duoc.duocconecta.comun.eventos.TiposDeEvento;
 import cl.duoc.duocconecta.proyectos.domain.Adjunto;
 import cl.duoc.duocconecta.proyectos.domain.Proyecto;
@@ -143,6 +145,23 @@ public class ServicioProyectos {
             throw new OperacionNoPermitidaException("No tienes acceso a este proyecto");
         }
         return aRespuesta(repo);
+    }
+
+    /**
+     * Anota que alguien abrió el detalle de un proyecto, para la tendencia. Sale solo a Kafka, sin
+     * aviso. No cuenta las vistas de la dueña ni de un proyecto que la persona no puede ver.
+     */
+    @Transactional(readOnly = true)
+    public void registrarVista(UUID id, String usuarioId) {
+        Proyecto proyecto = repositorioProyectos.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Proyecto no encontrado: " + id));
+        if (!proyecto.esVisiblePara(usuarioId)) {
+            throw new OperacionNoPermitidaException("No tienes acceso a este proyecto");
+        }
+        if (proyecto.getPropietarioId().equals(usuarioId) || proyecto.isOculto()) {
+            return;
+        }
+        eventos.publishEvent(SenalDeUso.vista(TipoRecurso.PROYECTO, id.toString(), usuarioId));
     }
 
     /** Permite ocultar sin borrar. Solo el propietario; cualquier otro recibe 403. */

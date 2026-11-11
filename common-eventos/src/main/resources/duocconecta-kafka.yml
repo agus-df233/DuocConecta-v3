@@ -1,0 +1,42 @@
+# Cliente de Kafka de los productores de DuocConecta (v3). Un solo archivo para los tres
+# servicios que publican: así no hay tres copias que se desincronicen. Cada uno lo trae con
+#
+#   spring.config.import: classpath:duocconecta-kafka.yml
+spring:
+  kafka:
+    # Los tres brokers: si uno no responde, el cliente arranca con los otros y luego descubre
+    # el clúster completo (la lista es solo para el primer contacto).
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092,localhost:9093,localhost:9094}
+    client-id: ${spring.application.name}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # Jackson 3 (Boot 4): el DTO viaja como JSON.
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      # El líder responde después de que las réplicas al día (min.insync.replicas = 2) lo guardaron.
+      acks: all
+      compression-type: lz4
+      properties:
+        # Un reintento nunca duplica ni desordena un registro dentro de su partición.
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        # Espera hasta 10 ms para juntar registros en un solo envío.
+        linger.ms: 10
+        # Corto a propósito, igual que el connection-timeout de RabbitMQ: se publica después del
+        # commit en el hilo de la petición, y sin brokers send() esperaría 60 s por defecto.
+        max.block.ms: 2000
+        request.timeout.ms: 5000
+        # Tope total por registro, reintentos incluidos (>= linger.ms + request.timeout.ms).
+        delivery.timeout.ms: 15000
+        # Sin la clase Java en una cabecera: el consumidor sabe qué DTO espera según el tópico,
+        # y el contrato queda en el JSON, no en el nombre de una clase del productor.
+        spring.json.add.type.headers: false
+
+duocconecta:
+  kafka:
+    habilitada: ${KAFKA_HABILITADA:true}
+    origen: ${spring.application.name}
+    topicos:
+      interacciones:
+        nombre: duocconecta.contenido.interacciones
+      actividad:
+        nombre: duocconecta.usuarios.actividad
