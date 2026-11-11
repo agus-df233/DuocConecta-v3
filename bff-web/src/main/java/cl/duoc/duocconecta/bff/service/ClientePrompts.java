@@ -40,6 +40,15 @@ public class ClientePrompts {
                 .body(LISTA);
     }
 
+    /** Los prompts de una persona, ocultos y borradores incluidos (moderación, solo ADMINISTRADOR). */
+    public List<PromptRespuesta> deAutor(String oid) {
+        return cliente.get()
+                .uri("/api/v1/prompts/admin?autorId={oid}", oid)
+                .header(HttpHeaders.AUTHORIZATION, usuarioActual.cabeceraAuthorization())
+                .retrieve()
+                .body(LISTA);
+    }
+
     /** El detalle, con las estrellas que le dio quien mira. */
     public PromptRespuesta obtener(UUID id) {
         return cliente.get()

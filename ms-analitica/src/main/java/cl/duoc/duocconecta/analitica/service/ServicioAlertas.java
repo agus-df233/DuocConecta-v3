@@ -21,10 +21,13 @@ public class ServicioAlertas {
         this.alertas = alertas;
     }
 
-    /** Las más recientes primero; solo las pendientes si se pide. */
+    /** Las más recientes primero; solo las pendientes, o solo las de una persona, si se pide. */
     @Transactional(readOnly = true)
-    public List<AlertaRespuesta> listar(boolean soloPendientes) {
+    public List<AlertaRespuesta> listar(boolean soloPendientes, String usuarioId) {
         var pagina = PageRequest.of(0, MAXIMO);
+        if (usuarioId != null && !usuarioId.isBlank()) {
+            return alertas.findByUsuarioIdOrderByCreadaEnDesc(usuarioId, pagina).stream().map(AlertaRespuesta::desde).toList();
+        }
         var filas = soloPendientes ? alertas.findByRevisadaOrderByCreadaEnDesc(false, pagina)
                 : alertas.findAllByOrderByCreadaEnDesc(pagina);
         return filas.stream().map(AlertaRespuesta::desde).toList();

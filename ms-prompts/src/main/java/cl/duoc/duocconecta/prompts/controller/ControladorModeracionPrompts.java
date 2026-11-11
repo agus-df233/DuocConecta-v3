@@ -45,8 +45,9 @@ public class ControladorModeracionPrompts {
     /** Todos los prompts, ocultos incluidos. */
     @Operation(summary = "Lista los prompts para moderar")
     @GetMapping
-    public List<PromptRespuesta> listar(@RequestParam(required = false) Boolean oculto) {
-        return servicio.listar(oculto);
+    public List<PromptRespuesta> listar(@RequestParam(required = false) Boolean oculto,
+                                        @RequestParam(required = false) String autorId) {
+        return servicio.listar(oculto, autorId);
     }
 
     /** Cifras de la biblioteca para el dashboard. */

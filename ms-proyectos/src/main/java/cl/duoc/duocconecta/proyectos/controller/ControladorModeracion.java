@@ -79,8 +79,9 @@ public class ControladorModeracion {
     @GetMapping
     public List<ProyectoRespuesta> listar(
             @Parameter(description = "true: solo ocultos · false: solo visibles") @RequestParam(required = false) Boolean oculto,
-            @Parameter(description = "PUBLICO, COMPARTIDO o PRIVADO") @RequestParam(required = false) Visibilidad visibilidad) {
-        return servicio.listar(oculto, visibilidad);
+            @Parameter(description = "PUBLICO, COMPARTIDO o PRIVADO") @RequestParam(required = false) Visibilidad visibilidad,
+            @Parameter(description = "oid de la dueña: los proyectos de una persona") @RequestParam(required = false) String propietarioId) {
+        return servicio.listar(oculto, visibilidad, propietarioId);
     }
 
     /**

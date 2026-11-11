@@ -94,6 +94,20 @@ public class Usuario {
     @Column(name = "red", nullable = false, length = 255)
     private List<String> redes = new ArrayList<>();
 
+    /** Oculto por un administrador. Aparte de {@code visible}: la persona no lo revierte sola. */
+    @Column(name = "oculto_por_moderacion", nullable = false)
+    private boolean ocultoPorModeracion = false;
+
+    @Column(name = "motivo_moderacion", length = 500)
+    private String motivoModeracion;
+
+    /** {@code oid} del administrador que lo ocultó. */
+    @Column(name = "moderado_por", length = 100)
+    private String moderadoPor;
+
+    @Column(name = "moderado_en")
+    private OffsetDateTime moderadoEn;
+
     /** Momento en que se auto-aprovisionó el perfil. */
     @Column(name = "creado_en", nullable = false, updatable = false)
     private OffsetDateTime creadoEn;
@@ -185,6 +199,34 @@ public class Usuario {
         if (rol != null) {
             this.rol = rol;
         }
+    }
+
+    /** Lo saca de los listados públicos por moderación, con el motivo y quién lo hizo. */
+    public void ocultarPorModeracion(String motivo, String administrador) {
+        this.ocultoPorModeracion = true;
+        this.motivoModeracion = motivo;
+        this.moderadoPor = administrador;
+        this.moderadoEn = OffsetDateTime.now();
+    }
+
+    /** Lo devuelve a los listados. Su propia visibilidad queda como la tenía. */
+    public void mostrarPorModeracion() {
+        this.ocultoPorModeracion = false;
+        this.motivoModeracion = null;
+        this.moderadoPor = null;
+        this.moderadoEn = null;
+    }
+
+    public boolean isOcultoPorModeracion() {
+        return ocultoPorModeracion;
+    }
+
+    public String getMotivoModeracion() {
+        return motivoModeracion;
+    }
+
+    public OffsetDateTime getModeradoEn() {
+        return moderadoEn;
     }
 
     /** Deja el texto sin espacios sobrantes y convierte el vacío en nulo. */

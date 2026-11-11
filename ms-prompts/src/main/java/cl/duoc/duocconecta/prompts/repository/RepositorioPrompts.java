@@ -32,8 +32,11 @@ public interface RepositorioPrompts extends JpaRepository<Prompt, UUID> {
     List<Prompt> findByAutorIdOrderByCreadoEnDesc(String autorId);
 
     /** Para moderar: todos, con filtro opcional por ocultos. */
-    @Query("select p from Prompt p where (:oculto is null or p.oculto = :oculto) order by p.creadoEn desc")
-    List<Prompt> paraModerar(Boolean oculto, Pageable pagina);
+    @Query("""
+            select p from Prompt p
+            where (:oculto is null or p.oculto = :oculto) and (:autorId is null or p.autorId = :autorId)
+            order by p.creadoEn desc""")
+    List<Prompt> paraModerar(Boolean oculto, String autorId, Pageable pagina);
 
     long countByOcultoTrue();
 

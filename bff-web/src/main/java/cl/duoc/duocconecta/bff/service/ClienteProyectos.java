@@ -76,6 +76,15 @@ public class ClienteProyectos {
     }
 
     /** Proyectos que la persona autenticada tiene permitido ver. */
+    /** Los proyectos de una persona, ocultos incluidos (moderación, solo ADMINISTRADOR). */
+    public List<ProyectoRespuesta> deDuena(String oid) {
+        return cliente.get()
+                .uri(RUTA + "/admin?propietarioId={oid}", oid)
+                .header(HttpHeaders.AUTHORIZATION, usuarioActual.cabeceraAuthorization())
+                .retrieve()
+                .body(LISTA);
+    }
+
     public List<ProyectoRespuesta> listar() {
         List<ProyectoRespuesta> respuesta = cliente.get()
                 .uri(RUTA)

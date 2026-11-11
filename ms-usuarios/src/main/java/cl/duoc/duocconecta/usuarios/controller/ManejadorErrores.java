@@ -20,6 +20,12 @@ public class ManejadorErrores extends ManejadorErroresBase {
     }
 
     /** El correo ya entró con el otro proveedor: es un conflicto de estado, no falta de permiso. */
+    /** Ocultar un perfil ya oculto, o mostrar uno que no lo está. */
+    @ExceptionHandler(cl.duoc.duocconecta.usuarios.service.ConflictoDeModeracionException.class)
+    public ProblemDetail manejarConflictoDeModeracion(RuntimeException excepcion) {
+        return problema(HttpStatus.CONFLICT, "No se puede en este momento", excepcion.getMessage());
+    }
+
     @ExceptionHandler(CorreoConOtraIdentidadException.class)
     public ProblemDetail manejarCorreoConOtraIdentidad(CorreoConOtraIdentidadException excepcion) {
         return problema(HttpStatus.CONFLICT, "Correo ya registrado",

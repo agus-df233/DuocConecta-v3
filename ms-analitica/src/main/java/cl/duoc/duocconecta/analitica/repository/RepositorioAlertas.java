@@ -23,4 +23,7 @@ public interface RepositorioAlertas extends JpaRepository<Alerta, UUID> {
     List<Alerta> findAllByOrderByCreadaEnDesc(Pageable pagina);
 
     long countByRevisadaFalse();
+
+    /** Las de una persona, las más recientes primero. */
+    List<Alerta> findByUsuarioIdOrderByCreadaEnDesc(String usuarioId, Pageable pagina);
 }

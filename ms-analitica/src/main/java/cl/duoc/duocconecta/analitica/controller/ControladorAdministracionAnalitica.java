@@ -56,8 +56,9 @@ public class ControladorAdministracionAnalitica {
     @Operation(summary = "Lista las alertas de actividad")
     @GetMapping("/alertas")
     public List<AlertaRespuesta> alertas(
-            @Parameter(description = "Solo las que falta revisar") @RequestParam(defaultValue = "false") boolean pendientes) {
-        return alertas.listar(pendientes);
+            @Parameter(description = "Solo las que falta revisar") @RequestParam(defaultValue = "false") boolean pendientes,
+            @Parameter(description = "Solo las de esta persona (oid)") @RequestParam(required = false) String usuarioId) {
+        return alertas.listar(pendientes, usuarioId);
     }
 
     /** Cuántas faltan por revisar, para el contador del menú. */

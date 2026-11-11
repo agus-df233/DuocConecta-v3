@@ -33,10 +33,11 @@ public class ServicioModeracionPrompts {
         this.eventos = eventos;
     }
 
-    /** Todos los prompts, con filtro opcional por ocultos. */
+    /** Todos los prompts, con filtro opcional por ocultos y por autor. */
     @Transactional(readOnly = true)
-    public List<PromptRespuesta> listar(Boolean oculto) {
-        return prompts.paraModerar(oculto, PageRequest.of(0, 500)).stream().map(PromptRespuesta::paraModerar).toList();
+    public List<PromptRespuesta> listar(Boolean oculto, String autorId) {
+        String autor = autorId == null || autorId.isBlank() ? null : autorId;
+        return prompts.paraModerar(oculto, autor, PageRequest.of(0, 500)).stream().map(PromptRespuesta::paraModerar).toList();
     }
 
     /** Lo saca de la biblioteca sin borrarlo. Su autor sigue viéndolo, con el motivo. */

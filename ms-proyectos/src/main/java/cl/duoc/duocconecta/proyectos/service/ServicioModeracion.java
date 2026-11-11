@@ -49,8 +49,9 @@ public class ServicioModeracion {
 
     /** Todos, incluidos privados, compartidos y ocultos. Los filtros son opcionales. */
     @Transactional(readOnly = true)
-    public List<ProyectoRespuesta> listar(Boolean oculto, Visibilidad visibilidad) {
+    public List<ProyectoRespuesta> listar(Boolean oculto, Visibilidad visibilidad, String propietarioId) {
         return repositorioProyectos.findAll().stream()
+                .filter(p -> propietarioId == null || propietarioId.isBlank() || propietarioId.equals(p.getPropietarioId()))
                 .filter(p -> oculto == null || p.isOculto() == oculto)
                 .filter(p -> visibilidad == null || p.getVisibilidad() == visibilidad)
                 .sorted(Comparator.comparing(Proyecto::getFechaCreacion).reversed())

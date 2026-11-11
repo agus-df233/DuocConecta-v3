@@ -128,6 +128,9 @@ spring:
       on-profile: dev
   flyway:
     locations: classpath:db/migration,classpath:db/demo
+    # Los datos de ejemplo son V900: una migración real nueva (V2…) queda "atrasada" respecto de
+    # ellos en una base que ya los tenía. Solo en dev; en la nube las versiones van en orden.
+    out-of-order: true
 
 logging:
   level:

@@ -27,7 +27,7 @@ public interface RepositorioUsuarios extends JpaRepository<Usuario, UUID> {
      */
     @Query("""
             SELECT u FROM Usuario u
-            WHERE u.visible = true
+            WHERE u.visible = true AND u.ocultoPorModeracion = false
               AND (:carrera IS NULL OR LOWER(u.carrera) = LOWER(:carrera))
               AND (:sede    IS NULL OR LOWER(u.sede)    = LOWER(:sede))
             ORDER BY u.nombre ASC
@@ -36,11 +36,38 @@ public interface RepositorioUsuarios extends JpaRepository<Usuario, UUID> {
                                  @Param("sede") String sede,
                                  Pageable paginacion);
 
-    /** Para el perfil público: si la persona se ocultó, es como si no existiera. */
-    Optional<Usuario> findByIdAndVisibleIsTrue(UUID id);
+    /**
+     * Para el perfil público: si la persona se ocultó, o la ocultó la moderación, es como si no
+     * existiera.
+     */
+    @Query("SELECT u FROM Usuario u WHERE u.id = :id AND u.visible = true AND u.ocultoPorModeracion = false")
+    Optional<Usuario> findByIdAndVisibleIsTrue(@Param("id") UUID id);
 
-    /** Los demás microservicios guardan el {@code oid}, no el id interno. */
-    Optional<Usuario> findByOidEntraAndVisibleIsTrue(String oidEntra);
+    /** Los demás microservicios guardan el {@code oid}, no el id interno. Misma regla de visibilidad. */
+    @Query("SELECT u FROM Usuario u WHERE u.oidEntra = :oid AND u.visible = true AND u.ocultoPorModeracion = false")
+    Optional<Usuario> findByOidEntraAndVisibleIsTrue(@Param("oid") String oidEntra);
+
+    /**
+     * Para la administración: todas las personas, también las ocultas, con filtros opcionales.
+     * {@code texto} busca en nombre y correo; {@code estado} es VISIBLE, OCULTA (por ella) o MODERADA.
+     */
+    @Query("""
+            SELECT u FROM Usuario u
+            WHERE (:texto IS NULL OR LOWER(u.nombre) LIKE :texto OR LOWER(u.correo) LIKE :texto)
+              AND (:carrera IS NULL OR LOWER(u.carrera) = LOWER(:carrera))
+              AND (:rol IS NULL OR u.rol = :rol)
+              AND (:estado IS NULL
+                   OR (:estado = 'VISIBLE' AND u.visible = true AND u.ocultoPorModeracion = false)
+                   OR (:estado = 'OCULTA' AND u.visible = false)
+                   OR (:estado = 'MODERADA' AND u.ocultoPorModeracion = true))
+            ORDER BY u.nombre ASC
+            """)
+    Page<Usuario> buscarParaAdministrar(@Param("texto") String texto, @Param("carrera") String carrera,
+                                        @Param("rol") cl.duoc.duocconecta.comun.seguridad.Rol rol,
+                                        @Param("estado") String estado, Pageable paginacion);
+
+    /** Cuántas ocultó la moderación, para el dashboard. */
+    long countByOcultoPorModeracionIsTrue();
 
     /** Total de perfiles visibles, para el dashboard de administración. */
     long countByVisibleIsTrue();

@@ -23,6 +23,15 @@ public class ClienteAnalitica {
         this.usuarioActual = usuarioActual;
     }
 
+    /** Las alertas de una persona. */
+    public List<AlertaActividadRespuesta.DeAnalitica> alertasDe(String oid) {
+        return cliente.get()
+                .uri("/api/v1/analitica/admin/alertas?usuarioId={oid}", oid)
+                .header(HttpHeaders.AUTHORIZATION, usuarioActual.cabeceraAuthorization())
+                .retrieve()
+                .body(ALERTAS);
+    }
+
     /** Las alertas, las más recientes primero. */
     public List<AlertaActividadRespuesta.DeAnalitica> alertas(boolean pendientes) {
         return cliente.get()

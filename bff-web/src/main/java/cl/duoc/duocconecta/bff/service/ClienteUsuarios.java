@@ -71,6 +71,15 @@ public class ClienteUsuarios {
         }
     }
 
+    /** Una persona por su oid, también si está oculta. ms-usuarios exige ADMINISTRADOR. */
+    public cl.duoc.duocconecta.bff.dto.PersonaAdmin personaAdmin(String oid) {
+        return cliente.get()
+                .uri("/api/v1/usuarios/admin/personas/por-oid/{oid}", oid)
+                .header(HttpHeaders.AUTHORIZATION, usuarioActual.cabeceraAuthorization())
+                .retrieve()
+                .body(cl.duoc.duocconecta.bff.dto.PersonaAdmin.class);
+    }
+
     /** Cifras de la comunidad. ms-usuarios exige ADMINISTRADOR, igual que el BFF. */
     public EstadisticasUsuarios estadisticas() {
         return cliente.get()
