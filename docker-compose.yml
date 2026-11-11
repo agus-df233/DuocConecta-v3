@@ -1,8 +1,10 @@
 # Un solo contenedor de PostgreSQL para todo el monorepo.
 # Cada microservicio es dueño de su propio schema y no toca los ajenos.
-# RabbitMQ vive en su propio archivo: es el mismo que corre en la nube.
+# RabbitMQ y Kafka viven en su propio archivo: son los mismos que corren en la nube.
+# Solo lo de un broker: docker compose -f docker/kafka/docker-compose.yml up -d
 include:
   - docker/rabbitmq/docker-compose.yml
+  - docker/kafka/docker-compose.yml
 
 services:
   postgres:
