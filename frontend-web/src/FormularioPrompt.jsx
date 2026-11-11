@@ -1,7 +1,13 @@
 // Ventana para publicar, editar o terminar una copia de un prompt: el mismo formulario. Valida
 // antes de enviar, para no depender de un 400 del servidor.
 import { useState } from 'react'
+import { enCache } from './cache'
 import { CATEGORIAS_PROMPT, ESCUELAS, HERRAMIENTAS_IA } from './catalogo'
+import {
+  ChecklistPublicacion, ConsejoCampo, ConsejosPrimeraVez, RevisionAntesDePublicar,
+} from './RecomendacionesPublicacion'
+import { consejosVistos, recomendacionesPrompt } from './reglasPublicacion'
+import TarjetaPrompt from './TarjetaPrompt'
 import Ventana from './Ventana'
 
 /** Un prompt nuevo empieza público: la biblioteca es para compartir. */
@@ -14,6 +20,10 @@ export default function FormularioPrompt({ prompt, esCopia = false, alGuardar, a
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
   const editando = Boolean(prompt?.id)
+  const [etapa, setEtapa] = useState(() => (!editando && !consejosVistos('prompt') ? 'consejos' : 'formulario'))
+  const [consejo, setConsejo] = useState(null)
+  const reglas = recomendacionesPrompt(datos)
+  const irACampo = (clave) => document.querySelector(`.modal [name="${clave}"]`)?.focus()
 
   const campo = (clave) => ({
     value: datos[clave] ?? '',
@@ -21,6 +31,8 @@ export default function FormularioPrompt({ prompt, esCopia = false, alGuardar, a
       setDatos({ ...datos, [clave]: e.target.value })
       setErrores({ ...errores, [clave]: '' })
     },
+    onFocus: () => setConsejo(clave),
+    name: clave,
     className: errores[clave] ? 'malo' : '',
     'aria-invalid': Boolean(errores[clave]),
     'aria-describedby': errores[clave] ? `error-prompt-${clave}` : undefined,
@@ -36,6 +48,11 @@ export default function FormularioPrompt({ prompt, esCopia = false, alGuardar, a
     if (!datos.proposito.trim()) fallos.proposito = 'Cuenta para qué sirve: es lo que se lee en la tarjeta.'
     if (!datos.contenido.trim()) fallos.contenido = 'Falta el texto del prompt.'
     if (Object.keys(fallos).length > 0) { setErrores(fallos); return }
+    if (!editando) { setEtapa('revision'); return }
+    await guardarAhora()
+  }
+
+  const guardarAhora = async () => {
     setGuardando(true)
     try {
       await alGuardar(datos)
@@ -44,9 +61,35 @@ export default function FormularioPrompt({ prompt, esCopia = false, alGuardar, a
     }
   }
 
+  if (etapa === 'consejos') {
+    return (
+      <Ventana titulo="Antes de publicar un prompt" alCerrar={alCerrar}>
+        <ConsejosPrimeraVez tipo="prompt" alTerminar={() => setEtapa('formulario')} />
+      </Ventana>
+    )
+  }
+
+  if (etapa === 'revision') {
+    const perfil = enCache('mi-perfil')?.perfil ?? {}
+    const vistaPrevia = {
+      ...datos, id: 'vista-previa', creadoEn: new Date().toISOString(), promedio: 0, valoraciones: 0,
+      autor: { nombre: perfil.nombre, carrera: perfil.carrera },
+    }
+    return (
+      <Ventana titulo="Revisa antes de publicar" alCerrar={alCerrar} ancha>
+        <RevisionAntesDePublicar reglas={reglas} publicando={guardando} alMejorar={() => setEtapa('formulario')}
+                                 alPublicar={guardarAhora}
+                                 tarjeta={<TarjetaPrompt prompt={vistaPrevia} alAbrir={() => {}} alCopiar={() => {}} />} />
+      </Ventana>
+    )
+  }
+
   return (
     <Ventana titulo={esCopia ? 'Tu copia del prompt' : (editando ? 'Editar prompt' : 'Publicar un prompt')} alCerrar={alCerrar} ancha>
-      <form onSubmit={enviar}>
+      <div className="formulario-con-recomendaciones">
+      <form onSubmit={enviar} onKeyDown={(e) => {
+        if (e.key === 'Escape' && consejo) { e.stopPropagation(); setConsejo(null) }
+      }}>
         {esCopia && (
           <p className="ayuda nota-abierto">
             Es tu copia y nace como borrador: ajústala y, cuando esté lista, déjala pública. El original
@@ -65,18 +108,20 @@ export default function FormularioPrompt({ prompt, esCopia = false, alGuardar, a
           <span className="contador-campo" aria-hidden="true">{datos.proposito.length}/500</span>
           {error('proposito')}
         </label>
+        {consejo === 'proposito' && <ConsejoCampo campo="proposito" alCerrar={() => setConsejo(null)} />}
 
         <label>
           El prompt *
           <textarea rows={8} maxLength={8000} className={`prompt-texto ${errores.contenido ? 'malo' : ''}`}
                     placeholder="El texto tal cual se copia. Marca con [corchetes] lo que hay que completar."
-                    value={datos.contenido}
+                    value={datos.contenido} name="contenido" onFocus={() => setConsejo('contenido')}
                     aria-invalid={Boolean(errores.contenido)}
                     aria-describedby={errores.contenido ? 'error-prompt-contenido' : undefined}
                     onChange={(e) => { setDatos({ ...datos, contenido: e.target.value }); setErrores({ ...errores, contenido: '' }) }} />
           <span className="contador-campo" aria-hidden="true">{datos.contenido.length}/8000</span>
           {error('contenido')}
         </label>
+        {consejo === 'contenido' && <ConsejoCampo campo="contenido" alCerrar={() => setConsejo(null)} />}
 
         <div className="dos-columnas">
           <label>
@@ -117,11 +162,14 @@ export default function FormularioPrompt({ prompt, esCopia = false, alGuardar, a
 
         <div className="acciones">
           <button className="principal" type="submit" disabled={guardando}>
-            {guardando ? 'Guardando…' : (editando ? 'Guardar cambios' : 'Publicar')}
+            {guardando ? 'Guardando…' : (editando ? 'Guardar cambios' : 'Revisar y publicar')}
           </button>
           <button className="secundario" type="button" onClick={alCerrar}>Cancelar</button>
         </div>
+        {consejo === 'herramienta' && <ConsejoCampo campo="herramienta" alCerrar={() => setConsejo(null)} />}
       </form>
+      <ChecklistPublicacion reglas={reglas} alIrACampo={irACampo} />
+      </div>
     </Ventana>
   )
 }
