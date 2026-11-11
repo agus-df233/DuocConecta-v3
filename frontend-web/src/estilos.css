@@ -1168,3 +1168,41 @@ textarea.prompt-texto { width: 100%; max-height: none; }
   .formulario-con-recomendaciones { grid-template-columns: 1fr; }
   .recomendaciones { position: static; margin: 0 16px 16px; grid-row: 1; }
 }
+
+/* --- Administración agrupada (v3) --- */
+.admin-layout { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 24px; align-items: start; }
+.admin-menu { position: sticky; top: 86px; display: grid; gap: 16px; }
+.admin-grupo { display: grid; gap: 2px; }
+.admin-grupo .rotulo { margin: 0 0 4px 10px; }
+.admin-grupo button {
+  text-align: left; background: none; border: 0; border-radius: 8px; padding: 8px 10px; cursor: pointer;
+  font: 600 14px var(--cuerpo); color: var(--tinta-media); transition: background .15s, color .15s;
+}
+.admin-grupo button:hover { background: var(--fondo-hueso); color: var(--tinta); }
+.admin-grupo button.activa { background: var(--azul-fondo); color: var(--azul-claro); box-shadow: inset 3px 0 0 var(--azul-claro); }
+.admin-menu-movil { display: none; }
+.admin-contenido { min-width: 0; animation: entraVista .22s ease-out; }
+.admin-titulo-seccion { font-family: var(--titulos); font-size: 22px; color: var(--azul); margin: 0 0 14px; }
+.titulo-seccion-admin { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.titulo-seccion-admin .acciones { margin: 0; }
+.paginador { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px 0; }
+.lista-ficha { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.lista-ficha li { display: grid; gap: 1px; font-size: 13.5px; }
+.iniciales.grande { width: 46px; height: 46px; font-size: 17px; flex: none; }
+.chip.apagado { opacity: .6; text-decoration: line-through; }
+.cuerpo-modal form { padding: 0; display: grid; gap: 8px; align-content: start; }
+.cuerpo-modal { display: grid; gap: 14px; }
+.mono { font-family: var(--mono); font-size: 12px; }
+@media (max-width: 900px) {
+  .admin-layout { grid-template-columns: 1fr; gap: 12px; }
+  .admin-menu { display: none; }
+  .admin-menu-movil { display: block; }
+  .admin-menu-movil select { width: 100%; min-height: 44px; font-weight: 600; }
+}
+
+/* Una celda de tabla con display:flex deja de ser celda y desalinea las líneas de la fila: en
+   pantallas anchas las acciones van en línea dentro de una celda normal. */
+@media (min-width: 641px) {
+  .tabla-admin td.acciones-fila { display: table-cell; text-align: right; white-space: nowrap; }
+  .tabla-admin td.acciones-fila > * + * { margin-left: 6px; }
+}

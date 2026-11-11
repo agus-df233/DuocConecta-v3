@@ -1,5 +1,5 @@
-// Vista de administración: dashboard de la comunidad, moderación de proyectos y comentarios, y lo
-// que llega por Kafka (alertas, actividad y el estado del streaming).
+// Vista de administración, en tres grupos: Comunidad (cifras y personas), Contenido (moderación de
+// proyectos, comentarios y prompts) y Plataforma (lo que llega por Kafka y la mensajería de la EP2).
 // Solo aparece para ADMINISTRADOR, pero quien protege de verdad es el backend: cada ruta /admin
 // responde 403 a cualquier otra cuenta.
 import { useCallback, useEffect, useState } from 'react'
@@ -14,7 +14,10 @@ import {
   publicarProyectoAbierto,
   resumenAdministracion,
 } from './api'
-import { Actividad, Alertas, Streaming } from './AdministracionStreaming'
+import { Actividad, Alertas } from './AdministracionStreaming'
+import AdminKafka from './AdminKafka'
+import AdminMensajeria from './AdminMensajeria'
+import AdminPersonas from './AdminPersonas'
 import { Barras, Cifra } from './Cifras'
 import ModerarPrompts from './ModerarPrompts'
 import Aviso, { useAviso } from './Aviso'
@@ -25,15 +28,25 @@ import Ventana from './Ventana'
 import { EsqueletoLista } from './Esqueleto'
 import TablaAdmin from './TablaAdmin'
 
-const PESTANAS = [
-  { id: 'resumen', texto: 'Resumen' },
-  { id: 'proyectos', texto: 'Proyectos' },
-  { id: 'comentarios', texto: 'Comentarios' },
-  { id: 'prompts', texto: 'Prompts' },
-  { id: 'alertas', texto: 'Alertas' },
-  { id: 'actividad', texto: 'Actividad' },
-  { id: 'streaming', texto: 'Streaming' },
+/** Las secciones, agrupadas. El id es el que va en la dirección: #/admin/<id>. */
+const GRUPOS = [
+  { titulo: 'Comunidad', secciones: [
+    { id: 'resumen', texto: 'Resumen', Vista: Resumen },
+    { id: 'personas', texto: 'Personas', Vista: AdminPersonas },
+  ] },
+  { titulo: 'Contenido', secciones: [
+    { id: 'proyectos', texto: 'Proyectos', Vista: ModerarProyectos },
+    { id: 'comentarios', texto: 'Comentarios', Vista: ModerarComentarios },
+    { id: 'prompts', texto: 'Prompts', Vista: ModerarPrompts },
+  ] },
+  { titulo: 'Plataforma', secciones: [
+    { id: 'alertas', texto: 'Alertas', Vista: Alertas },
+    { id: 'actividad', texto: 'Actividad', Vista: Actividad },
+    { id: 'kafka', texto: 'Kafka', Vista: AdminKafka },
+    { id: 'mensajeria', texto: 'Mensajería', Vista: AdminMensajeria },
+  ] },
 ]
+const SECCIONES = GRUPOS.flatMap((g) => g.secciones)
 
 const VISIBILIDADES = { PUBLICO: 'Público', COMPARTIDO: 'Compartido', PRIVADO: 'Privado' }
 
@@ -42,34 +55,48 @@ const VISIBILIDADES = { PUBLICO: 'Público', COMPARTIDO: 'Compartido', PRIVADO: 
  * enlace lleva directo a una sección.
  */
 export default function Administracion({ seccion, alCambiarSeccion }) {
-  const pestana = PESTANAS.some((p) => p.id === seccion) ? seccion : 'resumen'
-  const setPestana = alCambiarSeccion
+  const actual = SECCIONES.find((x) => x.id === seccion) ?? SECCIONES[0]
+  const { Vista } = actual
 
   return (
     <section>
       <div className="titulo-pagina">
         <div>
           <h1>Administración</h1>
-          <p>Cifras de la comunidad, moderación de la vitrina y lo que llega por Kafka.</p>
+          <p>Comunidad, moderación del contenido y la plataforma de mensajería.</p>
         </div>
       </div>
 
-      <div className="pestanas" role="tablist">
-        {PESTANAS.map((p) => (
-          <button key={p.id} type="button" role="tab" aria-selected={pestana === p.id}
-                  className={pestana === p.id ? 'activa' : ''} onClick={() => setPestana(p.id)}>
-            {p.texto}
-          </button>
-        ))}
+      <div className="admin-layout">
+        {/* En el computador, una barra lateral con los grupos; en el celular, un desplegable. */}
+        <nav className="admin-menu" aria-label="Secciones de administración">
+          {GRUPOS.map((g) => (
+            <div key={g.titulo} className="admin-grupo">
+              <p className="rotulo">{g.titulo}</p>
+              {g.secciones.map((x) => (
+                <button key={x.id} type="button" className={x.id === actual.id ? 'activa' : ''}
+                        aria-current={x.id === actual.id ? 'page' : undefined} onClick={() => alCambiarSeccion(x.id)}>
+                  {x.texto}
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <label className="admin-menu-movil">
+          <span className="solo-lector">Sección</span>
+          <select value={actual.id} onChange={(e) => alCambiarSeccion(e.target.value)}>
+            {GRUPOS.map((g) => (
+              <optgroup key={g.titulo} label={g.titulo}>
+                {g.secciones.map((x) => <option key={x.id} value={x.id}>{x.texto}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <div className="admin-contenido" key={actual.id}>
+          <h2 className="admin-titulo-seccion">{actual.texto}</h2>
+          <Vista />
+        </div>
       </div>
-
-      {pestana === 'resumen' && <Resumen />}
-      {pestana === 'proyectos' && <ModerarProyectos />}
-      {pestana === 'comentarios' && <ModerarComentarios />}
-      {pestana === 'prompts' && <ModerarPrompts />}
-      {pestana === 'alertas' && <Alertas />}
-      {pestana === 'actividad' && <Actividad />}
-      {pestana === 'streaming' && <Streaming />}
     </section>
   )
 }

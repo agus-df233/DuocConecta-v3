@@ -1,19 +1,16 @@
-// Las pestañas de Administración que vienen de Kafka (v3): alertas de actividad, registros por
-// hora y el estado del streaming (brokers, tópicos, grupos y lag). Todo se refresca solo: lo que
-// llega a los tópicos aparece aquí sin que nadie haga nada.
+// Las secciones de Administración que vienen de Kafka (v3): alertas de actividad y registros por
+// hora. El estado del clúster está en AdminKafka. Todo se refresca solo: lo que llega a los
+// tópicos aparece aquí sin que nadie haga nada.
 import { useCallback, useEffect, useState } from 'react'
-import {
-  alertasActividad, clusterKafka, consumidoresKafka, gruposKafka, marcarAlertaRevisada,
-  metricasActividad, pausarConsumidoresKafka, reanudarConsumidoresKafka, topicosKafka,
-} from './api'
+import { alertasActividad, marcarAlertaRevisada, metricasActividad } from './api'
+import { FichaPersona } from './AdminPersonas'
 import Aviso, { useAviso } from './Aviso'
-import { duracion, fechaLarga, TIPOS_ACTIVIDAD } from './catalogo'
+import { fechaLarga, TIPOS_ACTIVIDAD } from './catalogo'
 import { Barras, Cifra } from './Cifras'
 import { EsqueletoLista } from './Esqueleto'
 import TablaAdmin from './TablaAdmin'
 
 const ALERTAS_CADA = 20_000
-const STREAMING_CADA = 5_000
 
 /** Vuelve a pedir cada tantos milisegundos mientras la pestaña esté abierta. */
 function useRefresco(cargar, cada) {
@@ -31,6 +28,7 @@ function useRefresco(cargar, cada) {
 export function Alertas() {
   const [alertas, setAlertas] = useState(null)
   const [soloPendientes, setSoloPendientes] = useState(true)
+  const [ficha, setFicha] = useState(null)
   const [error, setError] = useState(null)
   const { texto: mensaje, avisar } = useAviso()
 
@@ -89,6 +87,7 @@ export function Alertas() {
                     </span>
                   </td>
                   <td className="acciones-fila">
+                    <button className="secundario" onClick={() => setFicha(a.usuarioId)}>Ver ficha</button>
                     {!a.revisada && <button className="secundario" onClick={() => revisar(a)}>Marcar revisada</button>}
                   </td>
                 </tr>
@@ -97,6 +96,7 @@ export function Alertas() {
           </TablaAdmin>
         </div>
       )}
+      {ficha && <FichaPersona oid={ficha} alCerrar={() => setFicha(null)} />}
       <Aviso texto={mensaje} />
     </>
   )
@@ -138,117 +138,6 @@ export function Actividad() {
         <Barras titulo="Actividad por tipo" conteos={sumar(actividad, (m) => m.tipo)} etiquetas={TIPOS_ACTIVIDAD} />
         <Barras titulo="Actividad por hora" conteos={sumar(actividad, hora)} />
       </div>
-    </>
-  )
-}
-
-/**
- * El streaming por dentro: brokers, tópicos, grupos y su lag. Pausar los consumidores deja los
- * registros acumulándose (el lag sube); al reanudar se ponen al día solos.
- */
-export function Streaming() {
-  const [estado, setEstado] = useState(null)
-  const [error, setError] = useState(null)
-  const [ocupado, setOcupado] = useState(false)
-  const { texto: mensaje, avisar } = useAviso()
-
-  const cargar = useCallback(() => Promise.all([clusterKafka(), topicosKafka(), gruposKafka(), consumidoresKafka()])
-    .then(([cluster, topicos, grupos, consumidores]) => {
-      setEstado({ cluster, topicos, grupos, consumidores })
-      setError(null)
-    })
-    .catch((e) => setError(e.message)), [])
-  useRefresco(cargar, STREAMING_CADA)
-
-  const pausados = estado?.consumidores?.some((c) => c.pausado)
-
-  const alternar = async () => {
-    setOcupado(true)
-    try {
-      if (pausados) {
-        await reanudarConsumidoresKafka()
-        avisar('Consumidores reanudados: siguen desde su último offset.')
-      } else {
-        await pausarConsumidoresKafka()
-        avisar('Consumidores en pausa: lo que llegue se acumula como lag.')
-      }
-      cargar()
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setOcupado(false)
-    }
-  }
-
-  if (error && !estado) return <div className="error">{error}</div>
-  if (!estado) return <EsqueletoLista filas={8} texto="Preguntándole a Kafka" />
-
-  const { cluster, topicos, grupos } = estado
-  return (
-    <>
-      {error && <div className="error" role="alert">{error}</div>}
-      <div className="cifras">
-        <Cifra valor={cluster.brokers.length} texto="Brokers vivos" alerta={cluster.brokers.length < 3}
-               detalle={`Controlador: broker ${cluster.controlador}`} />
-        <Cifra valor={topicos.length} texto="Tópicos" />
-        <Cifra valor={grupos.reduce((s, g) => s + g.lagTotal, 0)} texto="Lag total"
-               alerta={grupos.some((g) => g.lagTotal > 0)} detalle="Registros que esperan a su consumidor" />
-      </div>
-
-      <div className="filtros filtros-admin">
-        <p className="ayuda crece">
-          {pausados
-            ? 'Los consumidores están en pausa: siguen en su grupo, pero no leen.'
-            : 'Los consumidores están leyendo. Se actualiza cada 5 segundos.'}
-        </p>
-        <button type="button" className={pausados ? 'principal' : 'secundario'} disabled={ocupado} onClick={alternar}>
-          {pausados ? 'Reanudar consumidores' : 'Pausar consumidores'}
-        </button>
-      </div>
-
-      <h2 className="subtitulo-admin">Grupos de consumidores</h2>
-      <div className="tabla-scroll">
-        <TablaAdmin>
-          <thead><tr><th>Grupo</th><th>Estado</th><th>Lag</th></tr></thead>
-          <tbody>
-            {grupos.map((g) => (
-              <tr key={g.id}>
-                <td><strong>{g.id}</strong><span className="ayuda">{g.asignador}</span></td>
-                <td>{g.estado}</td>
-                <td><span className={g.lagTotal > 0 ? 'insignia pendiente-revision' : 'insignia revisada'}>{g.lagTotal}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </TablaAdmin>
-      </div>
-
-      <h2 className="subtitulo-admin">Tópicos</h2>
-      <div className="tabla-scroll">
-        <TablaAdmin>
-          <thead><tr><th>Tópico</th><th>Réplicas</th><th>Retención</th><th>Limpieza</th><th>Registros</th></tr></thead>
-          <tbody>
-            {topicos.map((t) => (
-              <tr key={t.nombre}>
-                <td><strong>{t.nombre}</strong>{t.protegido && <span className="ayuda">Topología base</span>}</td>
-                <td>{t.replicacion}</td>
-                <td>{duracion(t.configuracion['retention.ms'])}</td>
-                <td>{t.configuracion['cleanup.policy']}</td>
-                <td>{t.registros}</td>
-              </tr>
-            ))}
-          </tbody>
-        </TablaAdmin>
-      </div>
-
-      <h2 className="subtitulo-admin">Brokers</h2>
-      <div className="chips">
-        {cluster.brokers.map((b) => (
-          <span key={b.id} className="chip">
-            Broker {b.id} · {b.host}:{b.puerto}{b.controlador ? ' · controlador' : ''}
-          </span>
-        ))}
-      </div>
-      <Aviso texto={mensaje} />
     </>
   )
 }

@@ -322,3 +322,68 @@ export const eliminarPromptModerado = (id) => pedir(`/api/v1/prompts/admin/${id}
 
 /** Cifras de la biblioteca. */
 export const estadisticasPrompts = () => pedir('/api/v1/prompts/admin/estadisticas')
+
+// --- Administración (v3): personas, Kafka y mensajería ---------------------------
+
+const json = (cuerpo) => ({ body: JSON.stringify(cuerpo) })
+
+/** Busca personas en toda la comunidad (también ocultas). Sin teléfono ni redes. */
+export const buscarPersonas = (filtros = {}) => {
+  const parametros = new URLSearchParams(Object.entries(filtros).filter(([, v]) => v !== '' && v != null))
+  return pedir(`/api/v1/usuarios/admin/personas?${parametros}`)
+}
+
+/** Ficha de una persona: perfil, proyectos, prompts y alertas (BFF). */
+export const fichaPersona = (oid) => pedir(`/api/v1/bff/admin/personas/${encodeURIComponent(oid)}`)
+
+/** Saca un perfil de los listados públicos por moderación. */
+export const ocultarPersona = (id, motivo) =>
+  pedir(`/api/v1/usuarios/admin/personas/${id}/ocultar`, { method: 'PATCH', ...json({ motivo }) })
+
+/** Lo devuelve a los listados. */
+export const mostrarPersona = (id) => pedir(`/api/v1/usuarios/admin/personas/${id}/mostrar`, { method: 'PATCH' })
+
+/** Detalle de un tópico: líder, réplicas, ISR y offsets por partición. */
+export const topicoKafka = (nombre) => pedir(`/api/v1/mensajeria/kafka/topicos/${encodeURIComponent(nombre)}`)
+
+/** Crea un tópico. */
+export const crearTopicoKafka = (datos) => pedir('/api/v1/mensajeria/kafka/topicos', { method: 'POST', ...json(datos) })
+
+/** Cambia la configuración de un tópico (por ejemplo, la retención). */
+export const configurarTopicoKafka = (nombre, fijar) =>
+  pedir(`/api/v1/mensajeria/kafka/topicos/${encodeURIComponent(nombre)}/configuracion`, { method: 'PATCH', ...json({ fijar }) })
+
+/** Aumenta las particiones de un tópico. */
+export const aumentarParticionesKafka = (nombre, total) =>
+  pedir(`/api/v1/mensajeria/kafka/topicos/${encodeURIComponent(nombre)}/particiones`, { method: 'POST', ...json({ total }) })
+
+/** Borra un tópico. */
+export const eliminarTopicoKafka = (nombre) =>
+  pedir(`/api/v1/mensajeria/kafka/topicos/${encodeURIComponent(nombre)}`, { method: 'DELETE' })
+
+/** Mueve los offsets de un grupo vacío: INICIO, FIN o FECHA. */
+export const moverOffsetsKafka = (grupo, datos) =>
+  pedir(`/api/v1/mensajeria/kafka/grupos/${encodeURIComponent(grupo)}/offsets`, { method: 'POST', ...json(datos) })
+
+/** Colas SQS de la plataforma. */
+export const colasSqs = () => pedir('/api/v1/mensajeria/colas')
+export const purgarColaSqs = (nombre) => pedir(`/api/v1/mensajeria/colas/${nombre}/purga`, { method: 'POST' })
+export const redriveSqs = (nombre) => pedir(`/api/v1/mensajeria/colas/${nombre}/redrive`, { method: 'POST' })
+
+/** Colas de RabbitMQ (la topología base) y sus operaciones. */
+export const colasRabbit = () => pedir('/api/v1/mensajeria/rabbit/colas')
+export const crearColaRabbit = (datos) => pedir('/api/v1/mensajeria/rabbit/colas', { method: 'POST', ...json(datos) })
+export const eliminarColaRabbit = (nombre) => pedir(`/api/v1/mensajeria/rabbit/colas/${nombre}`, { method: 'DELETE' })
+export const purgarColaRabbit = (nombre) => pedir(`/api/v1/mensajeria/rabbit/colas/${nombre}/purga`, { method: 'POST' })
+export const redriveRabbit = (nombre) => pedir(`/api/v1/mensajeria/rabbit/colas/${nombre}/redrive`, { method: 'POST' })
+export const crearBindingRabbit = (datos) => pedir('/api/v1/mensajeria/rabbit/bindings', { method: 'POST', ...json(datos) })
+export const eliminarBindingRabbit = (datos) => pedir('/api/v1/mensajeria/rabbit/bindings', { method: 'DELETE', ...json(datos) })
+
+/** Las DLQ de los dos brokers y sus mensajes (ms-notificaciones). */
+export const descartes = () => pedir('/api/v1/notificaciones/admin/descartes')
+export const mensajesDescartados = (cola) => pedir(`/api/v1/notificaciones/admin/descartes/${cola}/mensajes`)
+
+/** Consumidores de SQS y RabbitMQ de ms-notificaciones: estado, pausa y reanudación. */
+export const consumidoresMensajeria = () => pedir('/api/v1/notificaciones/admin/consumidores')
+export const pausarConsumidoresMensajeria = () => pedir('/api/v1/notificaciones/admin/consumidores/pausa', { method: 'POST' })
+export const reanudarConsumidoresMensajeria = () => pedir('/api/v1/notificaciones/admin/consumidores/reanudar', { method: 'POST' })
